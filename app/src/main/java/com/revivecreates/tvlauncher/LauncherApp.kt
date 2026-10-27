@@ -916,7 +916,7 @@ private fun ControlCenterPanel(
             Column {
                 Label("Sheraton Heliopolis", px.s(22), weight = FontWeight.SemiBold)
                 Label(
-                    weather?.let { "${it.condition} · H ${it.high}° L ${it.low}°" } ?: "Weather updates when online",
+                    weather?.let { "${it.condition} · H ${it.high}° L ${it.low}°" } ?: (Weather.lastError?.let { "Weather unreachable. " + it.take(48) } ?: "Getting the weather"),
                     px.s(18),
                     color = Color.White.copy(alpha = 0.66f)
                 )
