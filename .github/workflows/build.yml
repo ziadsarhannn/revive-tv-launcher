@@ -6,6 +6,7 @@ on:
     paths-ignore:
       - "feed/**"
       - "README.md"
+      - "*.sh"
   workflow_dispatch:
 
 permissions:
