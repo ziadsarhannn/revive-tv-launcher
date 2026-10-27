@@ -25,7 +25,15 @@ fi
 ADB="$DIR/platform-tools/adb"
 
 step "Downloading the latest Revive TV"
-curl -fL --progress-bar -o revive-tv.apk "https://github.com/ziadsarhannn/revive-tv-launcher/releases/download/latest/revive-tv.apk"
+if curl -fL --retry 3 --retry-delay 3 --progress-bar -o revive-tv.apk.new "https://github.com/ziadsarhannn/revive-tv-launcher/releases/download/latest/revive-tv.apk"; then
+  mv revive-tv.apk.new revive-tv.apk
+elif [ -s revive-tv.apk ]; then
+  rm -f revive-tv.apk.new
+  echo "Download failed, so installing the copy saved last time."
+else
+  echo "Couldn't download Revive TV. Check the Mac's internet and run the same command again."
+  exit 1
+fi
 
 step "Connecting to the box at $TARGET"
 echo "If the TV asks to allow debugging, tick Always allow and press OK."
