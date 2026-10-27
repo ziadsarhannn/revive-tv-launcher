@@ -74,6 +74,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -94,6 +95,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.zIndex
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -113,7 +115,7 @@ class Px(private val unit: Dp, private val density: Density) {
     fun f(v: Number): Float = with(density) { (unit * v.toFloat()).toPx() }
 }
 
-private data class HeroText(val app: TvApp?, val item: WhatsNew.Item?)
+private data class HeroText(val app: TvApp?, val item: WhatsNew.Item?, val index: Int, val count: Int)
 
 private class CcItem(val name: String, val icon: ImageVector, val desc: String, val run: () -> Unit)
 
@@ -453,118 +455,59 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
         val weatherIcon = if (weather?.let { Weather.isCloudy(it.code) } == true) Icons.Cloud else Icons.Sun
         val tempText = weather?.let { "${it.temp}°" } ?: "--°"
 
-        // ---------- Top Shelf ----------
-        val heroBlur by animateDpAsState(if (gridMode) px.d(48) else 0.dp, tween(700, easing = FastOutSlowInEasing), label = "heroBlur")
-        val heroScale by animateFloatAsState(if (gridMode) 1.12f else 1f, tween(700, easing = FastOutSlowInEasing), label = "heroScale")
-        val heroDim by animateFloatAsState(if (gridMode) 0.5f else 0f, tween(700), label = "heroDim")
-
+        // ---------- Top Shelf: editorial type ----------
+        val accent by animateColorAsState(heroApp?.accent ?: Color(0xFFB3262F), tween(600), label = "accent")
+        val heroDim by animateFloatAsState(if (gridMode) 0.35f else 0f, tween(700), label = "heroDim")
+        Box(Modifier.fillMaxSize().background(Color(0xFF0B0B0D)))
         Box(
             Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = heroScale
-                    scaleY = heroScale
-                }
-                .then(if (heroBlur > 0.5.dp) Modifier.blur(heroBlur) else Modifier)
-        ) {
-            Crossfade(targetState = heroApp, animationSpec = tween(550), label = "hero") { app ->
-                if (app != null) HeroArt(app, px, slide) else Box(Modifier.fillMaxSize())
-            }
-        }
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = heroDim)))
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.62f), 0.62f to Color.Transparent)
-            )
-        )
-        Box(
-            Modifier
-                .align(Alignment.BottomStart)
+                .align(Alignment.TopStart)
                 .fillMaxWidth()
-                .height(px.d(460))
-                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f))))
+                .height(px.d(8))
+                .background(accent)
         )
 
         val textAlpha by animateFloatAsState(if (!gridMode) 1f else 0f, tween(400), label = "textAlpha")
         val textShift by animateDpAsState(if (gridMode) px.d(-40) else 0.dp, tween(600), label = "textShift")
-        val heroText = HeroText(heroApp, slides.getOrNull(slide.coerceAtMost(max(0, slides.lastIndex))))
-        Column(
-            Modifier
-                .offset(x = px.d(120), y = (if (slides.isNotEmpty()) px.d(250) else px.d(330)) + textShift)
-                .width(px.d(880))
-                .graphicsLayer { alpha = textAlpha }
-        ) {
-            AnimatedContent(
-                targetState = heroText,
-                transitionSpec = {
-                    (fadeIn(tween(500, delayMillis = 120)) + slideInVertically(tween(650, easing = FastOutSlowInEasing)) { it / 8 }) togetherWith
-                        fadeOut(tween(260))
+        val heroIndex = slide.coerceAtMost(max(0, slides.lastIndex))
+        val heroText = HeroText(heroApp, slides.getOrNull(heroIndex), heroIndex, slides.size)
+        AnimatedContent(
+            targetState = heroText,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = textAlpha
+                    translationY = textShift.toPx()
                 },
-                label = "heroText"
-            ) { ht ->
-                val app = ht.app
-                val item = ht.item
-                if (app != null && item != null) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                Modifier
-                                    .clip(RoundedCornerShape(px.d(8)))
-                                    .background(Color.White)
-                                    .padding(horizontal = px.d(14), vertical = px.d(6))
-                            ) {
-                                Label(WhatsNew.badge(item, now).uppercase(), px.s(18), color = Color(0xFF0B0B0D), weight = FontWeight.Bold)
-                            }
-                            Spacer(Modifier.width(px.d(14)))
-                            Label("ON " + app.label.uppercase(), px.s(22), color = Color.White.copy(alpha = 0.8f), weight = FontWeight.SemiBold)
-                        }
-                        Spacer(Modifier.height(px.d(18)))
-                        Label(item.title, px.s(76), weight = FontWeight.Bold, maxLines = 2)
-                        item.titleAr?.let {
-                            Spacer(Modifier.height(px.d(6)))
-                            Label(it, px.s(34), color = Color.White.copy(alpha = 0.85f), weight = FontWeight.SemiBold)
-                        }
-                        Spacer(Modifier.height(px.d(16)))
-                        Label(item.meta, px.s(26), color = Color.White.copy(alpha = 0.8f), weight = FontWeight.Medium)
-                        item.about?.let {
-                            Spacer(Modifier.height(px.d(10)))
-                            Label(it, px.s(24), color = Color.White.copy(alpha = 0.7f), maxLines = 2)
-                        }
-                    }
-                } else if (app != null) {
-                    Column {
-                        Label(app.label, px.s(80), weight = FontWeight.Bold, maxLines = 2)
-                        Spacer(Modifier.height(px.d(18)))
-                        Label(openedText(repo.lastOpened(app.packageName), now), px.s(28), color = Color.White.copy(alpha = 0.78f))
-                    }
-                }
-            }
-            if (slides.size > 1) {
-                Spacer(Modifier.height(px.d(26)))
-                Row(horizontalArrangement = Arrangement.spacedBy(px.d(12)), verticalAlignment = Alignment.CenterVertically) {
-                    slides.indices.forEach { i ->
-                        val active = i == slide
-                        val w by animateDpAsState(if (active) px.d(56) else px.d(12), tween(400), label = "dot$i")
-                        Box(
-                            Modifier
-                                .width(w)
-                                .height(px.d(12))
-                                .clip(RoundedCornerShape(50))
-                                .background(Color.White.copy(alpha = if (i < slide) 0.9f else 0.35f))
-                        ) {
-                            if (active) {
-                                Box(
-                                    Modifier
-                                        .fillMaxHeight()
-                                        .fillMaxWidth(slideProgress.value.coerceIn(0f, 1f))
-                                        .background(Color.White)
-                                )
-                            }
-                        }
-                    }
+            transitionSpec = {
+                (fadeIn(tween(500, delayMillis = 120)) + slideInVertically(tween(650, easing = FastOutSlowInEasing)) { it / 14 }) togetherWith
+                    fadeOut(tween(260))
+            },
+            label = "heroText"
+        ) { ht ->
+            EditorialShelf(ht, accent, px, now, ht.app?.let { repo.lastOpened(it.packageName) } ?: 0L)
+        }
+        // The divider doubles as the slideshow timer, filling in the app's color.
+        if (heroApp != null) {
+            Box(
+                Modifier
+                    .offset(x = px.d(120), y = px.d(500) + textShift)
+                    .width(px.d(1100))
+                    .height(px.d(2))
+                    .graphicsLayer { alpha = textAlpha }
+                    .background(Color.White.copy(alpha = 0.16f))
+            ) {
+                if (slides.size > 1) {
+                    Box(
+                        Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(slideProgress.value.coerceIn(0f, 1f))
+                            .background(accent)
+                    )
                 }
             }
         }
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = heroDim)))
 
         // ---------- App grid ----------
         val gridY by animateDpAsState(
@@ -680,6 +623,101 @@ private fun openedText(time: Long, now: Long): String = when {
     time == 0L -> "Press OK to open"
     now - time < 60_000L -> "Opened just now"
     else -> "Last opened " + DateUtils.getRelativeTimeSpanString(time, now, DateUtils.MINUTE_IN_MILLIS)
+}
+
+/** Biggest title size that fits: one line if possible, otherwise two. */
+private fun titleSize(title: String): Float {
+    val n = title.length.coerceAtLeast(1)
+    for (size in listOf(220f, 180f, 150f)) if (n * 0.56f * size <= 1300f) return size
+    for (size in listOf(140f, 120f, 100f, 84f)) if (n * 0.56f * size <= 2500f) return size
+    return 72f
+}
+
+@Composable
+private fun EditorialShelf(ht: HeroText, accent: Color, px: Px, now: Long, lastOpened: Long) {
+    val app = ht.app ?: return
+    val item = ht.item
+    Box(Modifier.fillMaxSize()) {
+        Row(Modifier.offset(x = px.d(120), y = px.d(120)), verticalAlignment = Alignment.CenterVertically) {
+            if (item != null) {
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(px.d(8)))
+                        .background(accent)
+                        .padding(horizontal = px.d(14), vertical = px.d(6))
+                ) {
+                    Label(WhatsNew.badge(item, now).uppercase(), px.s(18), weight = FontWeight.Bold)
+                }
+                Spacer(Modifier.width(px.d(16)))
+                Label("ON " + app.label.uppercase(), px.s(22), color = Color.White.copy(alpha = 0.7f), weight = FontWeight.SemiBold)
+            } else {
+                Label(app.label.uppercase(), px.s(22), color = Color.White.copy(alpha = 0.7f), weight = FontWeight.SemiBold)
+            }
+        }
+
+        if (item != null && ht.count > 1) {
+            BasicText(
+                text = (ht.index + 1).toString().padStart(2, '0'),
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = px.d(230), end = px.d(120)),
+                style = TextStyle(
+                    color = Color.White.copy(alpha = 0.22f),
+                    fontSize = px.s(300),
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-0.05).em,
+                    drawStyle = Stroke(width = px.f(2.5)),
+                ),
+                maxLines = 1,
+            )
+            Label(
+                "OF " + ht.count.toString().padStart(2, '0'),
+                px.s(26),
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = px.d(560), end = px.d(128)),
+                color = Color.White.copy(alpha = 0.5f),
+                weight = FontWeight.SemiBold,
+            )
+        }
+
+        val title = item?.title ?: app.label
+        val size = titleSize(title)
+        BasicText(
+            text = title,
+            modifier = Modifier.offset(x = px.d(112), y = px.d(210)).width(px.d(1300)),
+            style = TextStyle(
+                color = Color.White,
+                fontSize = px.s(size),
+                lineHeight = px.s(size * 0.94f),
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-0.05).em,
+            ),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        Row(
+            Modifier.offset(x = px.d(120), y = px.d(530)).width(px.d(1100)),
+            horizontalArrangement = Arrangement.spacedBy(px.d(60))
+        ) {
+            Column(Modifier.weight(1f)) {
+                Label("DETAILS", px.s(18), color = Color.White.copy(alpha = 0.5f), weight = FontWeight.SemiBold)
+                Spacer(Modifier.height(px.d(10)))
+                item?.titleAr?.let {
+                    Label(it, px.s(30), weight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(px.d(6)))
+                }
+                Label(item?.meta ?: "App", px.s(28), weight = FontWeight.SemiBold, maxLines = 2)
+            }
+            Column(Modifier.weight(1f)) {
+                Label(if (item != null) "STORY" else "ACTIVITY", px.s(18), color = Color.White.copy(alpha = 0.5f), weight = FontWeight.SemiBold)
+                Spacer(Modifier.height(px.d(10)))
+                Label(
+                    item?.about ?: openedText(lastOpened, now),
+                    px.s(26),
+                    color = Color.White.copy(alpha = 0.82f),
+                    maxLines = 3,
+                )
+            }
+        }
+    }
 }
 
 @Composable

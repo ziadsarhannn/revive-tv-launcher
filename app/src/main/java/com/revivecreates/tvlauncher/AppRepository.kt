@@ -27,6 +27,8 @@ data class TvApp(
     val tint: Color,
     /** Deep color behind the Top Shelf. */
     val heroColor: Color,
+    /** The app's signature color, for the Top Shelf accent bar and badge. */
+    val accent: Color,
 )
 
 class AppRepository(private val context: Context) {
@@ -79,10 +81,16 @@ class AppRepository(private val context: Context) {
         val source = bannerBmp ?: iconBmp
         var dominant = 0xFF1C1C1F.toInt()
         var deep = 0xFF1C1C1F.toInt()
+        var accent = 0xFF3D6AA8.toInt()
         if (source != null) {
             val palette = Palette.from(source).maximumColorCount(16).generate()
             dominant = palette.getDominantColor(dominant)
             deep = palette.getDarkMutedColor(palette.getDarkVibrantColor(darken(dominant, 0.55f)))
+            accent = palette.getVibrantColor(palette.getDarkVibrantColor(palette.getLightVibrantColor(dominant)))
+            // Keep white badge text readable: tone down very light colors, lift near black ones.
+            val lum = ColorUtils.calculateLuminance(accent)
+            if (lum > 0.45) accent = darken(accent, 0.45f)
+            if (lum < 0.02) accent = 0xFF3D6AA8.toInt()
         }
 
         return TvApp(
@@ -93,6 +101,7 @@ class AppRepository(private val context: Context) {
             icon = iconBmp?.asImageBitmap(),
             tint = Color(deep),
             heroColor = Color(darken(dominant, 0.62f)),
+            accent = Color(accent),
         )
     }
 
