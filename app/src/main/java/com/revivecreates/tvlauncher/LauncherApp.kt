@@ -5,7 +5,12 @@ import android.provider.Settings
 import android.text.format.DateFormat
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -68,6 +73,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -106,6 +112,8 @@ class Px(private val unit: Dp, private val density: Density) {
     fun s(v: Number): TextUnit = with(density) { (unit * v.toFloat()).toSp() }
     fun f(v: Number): Float = with(density) { (unit * v.toFloat()).toPx() }
 }
+
+private data class HeroText(val app: TvApp?, val item: WhatsNew.Item?)
 
 private class CcItem(val name: String, val icon: ImageVector, val desc: String, val run: () -> Unit)
 
@@ -162,6 +170,19 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
     val deviceName = remember { SystemActions.deviceName(context) }
 
     var weather by remember { mutableStateOf<Weather.Now?>(null) }
+    var feed by remember { mutableStateOf<WhatsNew.Feed?>(null) }
+    var slide by remember { mutableIntStateOf(0) }
+    val slideProgress = remember { Animatable(0f) }
+
+    // What's New: show the saved copy straight away, then check for the weekly update every 6 hours.
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) { WhatsNew.cached(context) }?.let { feed = it }
+        while (true) {
+            val fresh = withContext(Dispatchers.IO) { WhatsNew.refresh(context) }
+            if (fresh != null) feed = fresh
+            delay(if (fresh == null) 2 * 60_000L else 6 * 60 * 60_000L)
+        }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -193,6 +214,24 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
         if (row == 0) focusedApp?.let { heroKey = it.packageName }
     }
     val heroApp = apps.firstOrNull { it.packageName == heroKey } ?: rows.firstOrNull()?.firstOrNull()
+    val slides: List<WhatsNew.Item> = heroApp?.let { feed?.forLabel(it.label) }.orEmpty()
+
+    // Slideshow: a new title every 6 seconds while you rest on an app in the top row.
+    LaunchedEffect(heroApp?.packageName, slides.size) {
+        slide = 0
+        if (slides.size > 1) {
+            while (true) {
+                delay(6_000)
+                if (row == 0 && !ccOpen && menuApp == null && launching == null) {
+                    slide = (slide + 1) % slides.size
+                }
+            }
+        }
+    }
+    LaunchedEffect(heroApp?.packageName, slide, slides.size) {
+        slideProgress.snapTo(0f)
+        if (slides.size > 1) slideProgress.animateTo(1f, tween(6_000, easing = LinearEasing))
+    }
 
     LaunchedEffect(homeSignal) {
         menuApp = null
@@ -219,20 +258,16 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
         }
     }
 
+    // Opens the app straight away. Input is paused for a moment so a double press doesn't open it twice.
     fun launch(app: TvApp) {
         if (launching != null) return
         launching = app
         lastLaunched = app
+        repo.markOpened(app.packageName)
+        val ok = SystemActions.launchApp(context, app)
         scope.launch {
-            delay(420)
-            repo.markOpened(app.packageName)
-            val ok = SystemActions.launchApp(context, app)
-            if (!ok) {
-                launching = null
-            } else {
-                delay(4000)
-                if (launching == app) launching = null
-            }
+            delay(if (ok) 1_500L else 0L)
+            if (launching == app) launching = null
         }
     }
 
@@ -433,7 +468,7 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
                 .then(if (heroBlur > 0.5.dp) Modifier.blur(heroBlur) else Modifier)
         ) {
             Crossfade(targetState = heroApp, animationSpec = tween(550), label = "hero") { app ->
-                if (app != null) HeroArt(app, px) else Box(Modifier.fillMaxSize())
+                if (app != null) HeroArt(app, px, slide) else Box(Modifier.fillMaxSize())
             }
         }
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = heroDim)))
@@ -450,22 +485,83 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
                 .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f))))
         )
 
-        val textAlpha by animateFloatAsState(if (!gridMode && launching == null) 1f else 0f, tween(400), label = "textAlpha")
+        val textAlpha by animateFloatAsState(if (!gridMode) 1f else 0f, tween(400), label = "textAlpha")
         val textShift by animateDpAsState(if (gridMode) px.d(-40) else 0.dp, tween(600), label = "textShift")
-        Crossfade(
-            targetState = heroApp,
-            animationSpec = tween(450),
-            modifier = Modifier
-                .offset(x = px.d(120), y = px.d(330) + textShift)
-                .width(px.d(860))
-                .graphicsLayer { alpha = textAlpha },
-            label = "heroText"
-        ) { app ->
-            if (app != null) {
-                Column {
-                    Label(app.label, px.s(80), weight = FontWeight.Bold, maxLines = 2)
-                    Spacer(Modifier.height(px.d(18)))
-                    Label(openedText(repo.lastOpened(app.packageName), now), px.s(28), color = Color.White.copy(alpha = 0.78f))
+        val heroText = HeroText(heroApp, slides.getOrNull(slide.coerceAtMost(max(0, slides.lastIndex))))
+        Column(
+            Modifier
+                .offset(x = px.d(120), y = (if (slides.isNotEmpty()) px.d(250) else px.d(330)) + textShift)
+                .width(px.d(880))
+                .graphicsLayer { alpha = textAlpha }
+        ) {
+            AnimatedContent(
+                targetState = heroText,
+                transitionSpec = {
+                    (fadeIn(tween(500, delayMillis = 120)) + slideInVertically(tween(650, easing = FastOutSlowInEasing)) { it / 8 }) togetherWith
+                        fadeOut(tween(260))
+                },
+                label = "heroText"
+            ) { ht ->
+                val app = ht.app
+                val item = ht.item
+                if (app != null && item != null) {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                Modifier
+                                    .clip(RoundedCornerShape(px.d(8)))
+                                    .background(Color.White)
+                                    .padding(horizontal = px.d(14), vertical = px.d(6))
+                            ) {
+                                Label(WhatsNew.badge(item, now).uppercase(), px.s(18), color = Color(0xFF0B0B0D), weight = FontWeight.Bold)
+                            }
+                            Spacer(Modifier.width(px.d(14)))
+                            Label("ON " + app.label.uppercase(), px.s(22), color = Color.White.copy(alpha = 0.8f), weight = FontWeight.SemiBold)
+                        }
+                        Spacer(Modifier.height(px.d(18)))
+                        Label(item.title, px.s(76), weight = FontWeight.Bold, maxLines = 2)
+                        item.titleAr?.let {
+                            Spacer(Modifier.height(px.d(6)))
+                            Label(it, px.s(34), color = Color.White.copy(alpha = 0.85f), weight = FontWeight.SemiBold)
+                        }
+                        Spacer(Modifier.height(px.d(16)))
+                        Label(item.meta, px.s(26), color = Color.White.copy(alpha = 0.8f), weight = FontWeight.Medium)
+                        item.about?.let {
+                            Spacer(Modifier.height(px.d(10)))
+                            Label(it, px.s(24), color = Color.White.copy(alpha = 0.7f), maxLines = 2)
+                        }
+                    }
+                } else if (app != null) {
+                    Column {
+                        Label(app.label, px.s(80), weight = FontWeight.Bold, maxLines = 2)
+                        Spacer(Modifier.height(px.d(18)))
+                        Label(openedText(repo.lastOpened(app.packageName), now), px.s(28), color = Color.White.copy(alpha = 0.78f))
+                    }
+                }
+            }
+            if (slides.size > 1) {
+                Spacer(Modifier.height(px.d(26)))
+                Row(horizontalArrangement = Arrangement.spacedBy(px.d(12)), verticalAlignment = Alignment.CenterVertically) {
+                    slides.indices.forEach { i ->
+                        val active = i == slide
+                        val w by animateDpAsState(if (active) px.d(56) else px.d(12), tween(400), label = "dot$i")
+                        Box(
+                            Modifier
+                                .width(w)
+                                .height(px.d(12))
+                                .clip(RoundedCornerShape(50))
+                                .background(Color.White.copy(alpha = if (i < slide) 0.9f else 0.35f))
+                        ) {
+                            if (active) {
+                                Box(
+                                    Modifier
+                                        .fillMaxHeight()
+                                        .fillMaxWidth(slideProgress.value.coerceIn(0f, 1f))
+                                        .background(Color.White)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -504,7 +600,7 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
         }
 
         // ---------- Time, weather and next prayer. Press Up to focus it, OK for Control Center ----------
-        val infoAlpha by animateFloatAsState(if (!gridMode && !ccOpen && launching == null) 1f else 0f, label = "infoAlpha")
+        val infoAlpha by animateFloatAsState(if (!gridMode && !ccOpen) 1f else 0f, label = "infoAlpha")
         val infoBg by animateColorAsState(if (pillFocused) Color.White.copy(alpha = 0.16f) else Color.Transparent, label = "infoBg")
         val infoScale by animateFloatAsState(if (pillFocused) 1.06f else 1f, spring(0.6f, 400f), label = "infoScale")
         Column(
@@ -551,36 +647,6 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
             }
         }
 
-        // ---------- App opening zoom ----------
-        val lAlpha by animateFloatAsState(if (launching != null) 1f else 0f, tween(380), label = "lAlpha")
-        val lScale by animateFloatAsState(if (launching != null) 1f else 0.4f, tween(480, easing = FastOutSlowInEasing), label = "lScale")
-        val shown = lastLaunched
-        if (lAlpha > 0.01f && shown != null) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        alpha = lAlpha
-                        scaleX = lScale
-                        scaleY = lScale
-                    }
-                    .background(if (shown.banner != null) shown.heroColor else shown.tint),
-                contentAlignment = Alignment.Center
-            ) {
-                val banner = shown.banner
-                if (banner != null) {
-                    Image(
-                        banner,
-                        contentDescription = shown.label,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(px.d(720), px.d(405)).clip(RoundedCornerShape(px.d(36)))
-                    )
-                } else {
-                    shown.icon?.let { Image(it, contentDescription = shown.label, modifier = Modifier.size(px.d(260))) }
-                }
-            }
-        }
-
         // ---------- Overlays ----------
         AnimatedVisibility(
             visible = ccOpen || menuApp != null,
@@ -617,7 +683,18 @@ private fun openedText(time: Long, now: Long): String = when {
 }
 
 @Composable
-private fun HeroArt(app: TvApp, px: Px) {
+private fun HeroArt(app: TvApp, px: Px, slide: Int) {
+    // Each slide nudges the artwork to a new spot, so the slideshow feels alive.
+    val slideShift by animateFloatAsState(
+        listOf(0f, -90f, 70f, -40f)[slide % 4],
+        tween(1100, easing = FastOutSlowInEasing),
+        label = "slideShift"
+    )
+    val slideZoom by animateFloatAsState(
+        listOf(1f, 1.04f, 1.02f, 1.05f)[slide % 4],
+        tween(1400, easing = FastOutSlowInEasing),
+        label = "slideZoom"
+    )
     val drift = rememberInfiniteTransition(label = "drift")
     val t by drift.animateFloat(
         initialValue = 0f,
@@ -632,7 +709,7 @@ private fun HeroArt(app: TvApp, px: Px) {
                 Image(
                     art,
                     contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Crop, filterQuality = FilterQuality.High,
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
@@ -647,16 +724,16 @@ private fun HeroArt(app: TvApp, px: Px) {
             Image(
                 art,
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Crop, filterQuality = FilterQuality.High,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = px.d(150), end = px.d(120))
                     .size(px.d(760), px.d(428))
                     .graphicsLayer {
-                        translationX = -t * px.f(28)
+                        translationX = -t * px.f(28) + px.f(slideShift)
                         translationY = t * px.f(10)
-                        scaleX = 1f + t * 0.02f
-                        scaleY = 1f + t * 0.02f
+                        scaleX = (1f + t * 0.02f) * slideZoom
+                        scaleY = (1f + t * 0.02f) * slideZoom
                         shadowElevation = px.f(40)
                         shape = RoundedCornerShape(px.d(30))
                         clip = true
@@ -731,14 +808,14 @@ private fun AppTile(
         ) {
             val banner = app.banner
             if (banner != null) {
-                Image(banner, contentDescription = app.label, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                Image(banner, contentDescription = app.label, contentScale = ContentScale.Crop, filterQuality = FilterQuality.High, modifier = Modifier.fillMaxSize())
             } else {
                 Column(
                     Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    app.icon?.let { Image(it, contentDescription = null, modifier = Modifier.size(px.d(84))) }
+                    app.icon?.let { Image(it, contentDescription = null, modifier = Modifier.size(px.d(84)), filterQuality = FilterQuality.High) }
                     Spacer(Modifier.height(px.d(10)))
                     Label(
                         app.label,

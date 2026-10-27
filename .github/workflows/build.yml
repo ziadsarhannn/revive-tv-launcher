@@ -3,6 +3,9 @@ name: Build APK
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "feed/**"
+      - "README.md"
   workflow_dispatch:
 
 permissions:

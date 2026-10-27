@@ -1,0 +1,41 @@
+{
+  "updated": "2026-10-27",
+  "apps": [
+    {
+      "name": "Netflix",
+      "match": ["netflix"],
+      "items": [
+        { "title": "Obsess", "type": "Series", "year": 2026, "genre": "Psychological horror", "date": "2026-10-30", "about": "A Kuwaiti horror series set in the 1970s." },
+        { "title": "Dead-End Job", "type": "Series", "year": 2026, "genre": "Horror comedy", "date": "2026-10-30", "about": "A part time job that looks too good to be true turns into a nightmare. Eight episodes from Korea." },
+        { "title": "A Couple of Lies", "type": "Series", "year": 2026, "genre": "Thriller", "date": "2026-10-30", "about": "Two couples swap homes and get pulled into each other's games. Swedish Nordic noir." },
+        { "title": "The Fall of El Mayo", "type": "Docuseries", "year": 2026, "genre": "True crime", "date": "2026-10-29", "about": "Three episodes on how a cartel founder was finally captured in 2024." },
+        { "title": "The Gift of Deceit", "type": "Series", "year": 2026, "genre": "Thriller", "date": "2026-10-28", "about": "A Brazilian thriller where one scam digs up a family's buried secrets." }
+      ]
+    },
+    {
+      "name": "Shahid",
+      "match": ["shahid"],
+      "items": [
+        { "title": "El Qessa El Kamla: Crime in Zamalek", "titleAr": "القصة الكاملة: جريمة في الزمالك", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-30", "about": "A new chapter of the El Qessa El Kamla anthology, set in Zamalek." },
+        { "title": "Tale' Nazel", "titleAr": "طالع نازل", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-10", "about": "Mona Zaki plays a businesswoman who finds out her musician husband secretly married again." },
+        { "title": "Ahla Naseeb", "titleAr": "أحلى نصيب", "type": "Series", "year": 2026, "genre": "Romantic drama", "date": "2026-10-04", "about": "Two strangers agree to a temporary marriage, and their families turn it upside down." }
+      ]
+    },
+    {
+      "name": "Yango Play",
+      "match": ["yango"],
+      "items": [
+        { "title": "Khamseen Khamseen (50/50)", "titleAr": "خمسين خمسين", "type": "Series", "year": 2026, "genre": "Comedy crime", "date": "2026-10-29", "about": "Kinda Alloush leads a gang through one chaotic adventure after another. The last two episodes drop Thursday at 10 PM." }
+      ]
+    },
+    {
+      "name": "WATCH IT",
+      "match": ["watch it", "watchit"],
+      "items": [
+        { "title": "Dafneenah Sawa", "titleAr": "دافنينه سوا", "type": "Series", "year": 2026, "genre": "Comedy adventure", "date": "2026-10-28", "about": "Two ex thieves take security jobs at the compound built over the treasure they buried. Ten episodes." },
+        { "title": "Walad El Lazina", "titleAr": "ولاد اللذينة", "type": "Series", "year": 2026, "genre": "Suspense drama", "date": null, "about": "A young man's life spirals after he falls for the wrong girl." },
+        { "title": "Ward", "titleAr": "ورد", "type": "Series", "year": 2026, "genre": "Micro drama", "date": null, "about": "A pharmacist who drives for a ride app meets a new story with every passenger. Thirty short episodes." }
+      ]
+    }
+  ]
+}

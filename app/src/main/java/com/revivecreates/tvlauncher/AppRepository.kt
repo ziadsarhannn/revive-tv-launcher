@@ -2,7 +2,10 @@ package com.revivecreates.tvlauncher
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.util.DisplayMetrics
+import androidx.core.content.res.ResourcesCompat
 import android.content.pm.ResolveInfo
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
@@ -62,11 +65,16 @@ class AppRepository(private val context: Context) {
     private fun build(ri: ResolveInfo): TvApp {
         val ai = ri.activityInfo
         val label = ri.loadLabel(pm)?.toString()?.trim().orEmpty().ifEmpty { ai.packageName }
-        val bannerDrawable: Drawable? = ai.loadBanner(pm) ?: ai.applicationInfo.loadBanner(pm)
-        val iconDrawable: Drawable? = runCatching { ri.loadIcon(pm) }.getOrNull()
+        // Ask each app for its sharpest artwork (the highest density it ships), not the default size.
+        val bannerRes = if (ai.banner != 0) ai.banner else ai.applicationInfo.banner
+        val iconRes = if (ri.iconResource != 0) ri.iconResource else if (ai.icon != 0) ai.icon else ai.applicationInfo.icon
+        val bannerDrawable: Drawable? = sharpest(ai.applicationInfo, bannerRes)
+            ?: ai.loadBanner(pm) ?: ai.applicationInfo.loadBanner(pm)
+        val iconDrawable: Drawable? = sharpest(ai.applicationInfo, iconRes)
+            ?: runCatching { ri.loadIcon(pm) }.getOrNull()
 
-        val bannerBmp = bannerDrawable?.let { runCatching { it.toBitmap(640, 360, Bitmap.Config.ARGB_8888) }.getOrNull() }
-        val iconBmp = iconDrawable?.let { runCatching { it.toBitmap(192, 192, Bitmap.Config.ARGB_8888) }.getOrNull() }
+        val bannerBmp = bannerDrawable?.let { runCatching { it.toBitmap(960, 540, Bitmap.Config.ARGB_8888) }.getOrNull() }
+        val iconBmp = iconDrawable?.let { runCatching { it.toBitmap(288, 288, Bitmap.Config.ARGB_8888) }.getOrNull() }
 
         val source = bannerBmp ?: iconBmp
         var dominant = 0xFF1C1C1F.toInt()
@@ -86,6 +94,14 @@ class AppRepository(private val context: Context) {
             tint = Color(deep),
             heroColor = Color(darken(dominant, 0.62f)),
         )
+    }
+
+    private fun sharpest(appInfo: ApplicationInfo, resId: Int): Drawable? {
+        if (resId == 0) return null
+        return runCatching {
+            val res = pm.getResourcesForApplication(appInfo)
+            ResourcesCompat.getDrawableForDensity(res, resId, DisplayMetrics.DENSITY_XXXHIGH, null)
+        }.getOrNull()
     }
 
     private fun darken(color: Int, amount: Float): Int =
