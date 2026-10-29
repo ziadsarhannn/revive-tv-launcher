@@ -1,22 +1,23 @@
 {
-  "updated": "2026-10-27",
+  "updated": "2026-10-29",
   "apps": [
     {
       "name": "Netflix",
       "match": ["netflix"],
       "items": [
-        { "title": "Obsess", "type": "Series", "year": 2026, "genre": "Psychological horror", "date": "2026-10-30", "about": "A Kuwaiti horror series set in the 1970s." },
-        { "title": "Dead-End Job", "type": "Series", "year": 2026, "genre": "Horror comedy", "date": "2026-10-30", "about": "A part time job that looks too good to be true turns into a nightmare. Eight episodes from Korea." },
+        { "title": "Black Doves", "type": "Series", "year": 2026, "genre": "Spy thriller", "date": "2026-11-05", "about": "Keira Knightley and Ben Whishaw are back for a second season of London spy games." },
+        { "title": "Obsess", "type": "Series", "year": 2026, "genre": "Psychological horror", "date": "2026-10-30", "about": "Netflix's Kuwaiti horror: a man home for his father's funeral keeps seeing the woman he once loved." },
         { "title": "A Couple of Lies", "type": "Series", "year": 2026, "genre": "Thriller", "date": "2026-10-30", "about": "Two couples swap homes and get pulled into each other's games. Swedish Nordic noir." },
         { "title": "The Fall of El Mayo", "type": "Docuseries", "year": 2026, "genre": "True crime", "date": "2026-10-29", "about": "Three episodes on how a cartel founder was finally captured in 2024." },
-        { "title": "The Gift of Deceit", "type": "Series", "year": 2026, "genre": "Thriller", "date": "2026-10-28", "about": "A Brazilian thriller where one scam digs up a family's buried secrets." }
+        { "title": "Lupin", "type": "Series", "year": 2026, "genre": "Heist thriller", "date": "2026-10-23", "about": "Omar Sy slips back into the gentleman thief's shoes for Part 4." }
       ]
     },
     {
       "name": "Shahid",
       "match": ["shahid"],
       "items": [
-        { "title": "El Qessa El Kamla: Crime in Zamalek", "titleAr": "القصة الكاملة: جريمة في الزمالك", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-30", "about": "A new chapter of the El Qessa El Kamla anthology, set in Zamalek." },
+        { "title": "El Qessa El Kamla: Crime in Zamalek", "titleAr": "القصة الكاملة: جريمة في الزمالك", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-30", "about": "Saba Mubarak leads a three episode murder mystery where every clue points to a new suspect in Zamalek." },
+        { "title": "A Matter of Life or Death", "titleAr": "مسألة حياة أو موت", "type": "Film", "year": 2026, "genre": "Romantic dark comedy", "date": "2026-10-22", "about": "Saudi Oscar pick: a Jeddah woman sure a curse will kill her at 30 meets a very strange heart surgeon." },
         { "title": "Tale' Nazel", "titleAr": "طالع نازل", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-10", "about": "Mona Zaki plays a businesswoman who finds out her musician husband secretly married again." },
         { "title": "Ahla Naseeb", "titleAr": "أحلى نصيب", "type": "Series", "year": 2026, "genre": "Romantic drama", "date": "2026-10-04", "about": "Two strangers agree to a temporary marriage, and their families turn it upside down." }
       ]
