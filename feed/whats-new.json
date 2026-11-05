@@ -1,32 +1,34 @@
 {
-  "updated": "2026-10-29",
+  "updated": "2026-11-05",
   "apps": [
     {
       "name": "Netflix",
       "match": ["netflix"],
       "items": [
+        { "title": "Love Is Blind, Habibi", "type": "Series", "year": 2026, "genre": "Reality dating", "date": "2026-11-12", "about": "Season 2 of the Arab dating experiment: new singles try to get engaged before ever seeing each other." },
+        { "title": "The Devil's Plan", "type": "Series", "year": 2026, "genre": "Strategy competition", "date": "2026-11-10", "about": "Season 3 locks 16 sharp players in a battle of wits for serious cash." },
+        { "title": "Under Siege", "type": "Series", "year": 2026, "genre": "Historical drama", "date": "2026-11-06", "about": "Colombian drama reliving the 27 hour siege of Bogota's Palace of Justice in 1985." },
         { "title": "Black Doves", "type": "Series", "year": 2026, "genre": "Spy thriller", "date": "2026-11-05", "about": "Keira Knightley and Ben Whishaw are back for a second season of London spy games." },
-        { "title": "Obsess", "type": "Series", "year": 2026, "genre": "Psychological horror", "date": "2026-10-30", "about": "Netflix's Kuwaiti horror: a man home for his father's funeral keeps seeing the woman he once loved." },
-        { "title": "A Couple of Lies", "type": "Series", "year": 2026, "genre": "Thriller", "date": "2026-10-30", "about": "Two couples swap homes and get pulled into each other's games. Swedish Nordic noir." },
-        { "title": "The Fall of El Mayo", "type": "Docuseries", "year": 2026, "genre": "True crime", "date": "2026-10-29", "about": "Three episodes on how a cartel founder was finally captured in 2024." },
-        { "title": "Lupin", "type": "Series", "year": 2026, "genre": "Heist thriller", "date": "2026-10-23", "about": "Omar Sy slips back into the gentleman thief's shoes for Part 4." }
+        { "title": "Obsess", "type": "Series", "year": 2026, "genre": "Psychological horror", "date": "2026-10-30", "about": "Netflix's Kuwaiti horror: a man home for his father's funeral keeps seeing the woman he once loved." }
       ]
     },
     {
       "name": "Shahid",
       "match": ["shahid"],
       "items": [
+        { "title": "The Floor", "titleAr": "The Floor: الأرض لك اكسبها", "type": "Series", "year": 2026, "genre": "Game show", "date": "2026-11-10", "about": "Players battle for squares on a giant grid, each one a trivia category. Win a duel, grab more floor." },
+        { "title": "Al Sitt Omour", "titleAr": "الست أومور", "type": "Series", "year": 2026, "genre": "Turkish drama", "date": "2026-11-01", "about": "Left by her husband, a mother of three fixes cars to keep her kids fed." },
         { "title": "El Qessa El Kamla: Crime in Zamalek", "titleAr": "القصة الكاملة: جريمة في الزمالك", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-30", "about": "Saba Mubarak leads a three episode murder mystery where every clue points to a new suspect in Zamalek." },
         { "title": "A Matter of Life or Death", "titleAr": "مسألة حياة أو موت", "type": "Film", "year": 2026, "genre": "Romantic dark comedy", "date": "2026-10-22", "about": "Saudi Oscar pick: a Jeddah woman sure a curse will kill her at 30 meets a very strange heart surgeon." },
-        { "title": "Tale' Nazel", "titleAr": "طالع نازل", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-10", "about": "Mona Zaki plays a businesswoman who finds out her musician husband secretly married again." },
-        { "title": "Ahla Naseeb", "titleAr": "أحلى نصيب", "type": "Series", "year": 2026, "genre": "Romantic drama", "date": "2026-10-04", "about": "Two strangers agree to a temporary marriage, and their families turn it upside down." }
+        { "title": "Tale' Nazel", "titleAr": "طالع نازل", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-10", "about": "Mona Zaki's betrayal drama wraps up: the final two episodes land November 7." }
       ]
     },
     {
       "name": "Yango Play",
       "match": ["yango"],
       "items": [
-        { "title": "Khamseen Khamseen (50/50)", "titleAr": "خمسين خمسين", "type": "Series", "year": 2026, "genre": "Comedy crime", "date": "2026-10-29", "about": "Kinda Alloush leads a gang through one chaotic adventure after another. The last two episodes drop Thursday at 10 PM." }
+        { "title": "Khally Balak Men Nafsak", "titleAr": "خلي بالك من نفسك", "type": "Film", "year": 2026, "genre": "Comedy", "date": "2026-11-05", "about": "Ahmed El Sakka plays a commitment shy radio host who falls for Yasmine Abdel Aziz, an arms dealer." },
+        { "title": "Khamseen Khamseen (50/50)", "titleAr": "خمسين خمسين", "type": "Series", "year": 2026, "genre": "Comedy crime", "date": "2026-10-29", "about": "Kinda Alloush leads a gang through one chaotic adventure after another, now streaming in full." }
       ]
     },
     {
