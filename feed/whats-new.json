@@ -1,14 +1,14 @@
 {
-  "updated": "2026-11-05",
+  "updated": "2026-11-12",
   "apps": [
     {
       "name": "Netflix",
       "match": ["netflix"],
       "items": [
+        { "title": "The Altruists", "type": "Series", "year": 2026, "genre": "Biographical drama", "date": "2026-11-19", "about": "Julia Garner and Anthony Boyle chart the dizzying rise and crash of crypto giant FTX." },
+        { "title": "Heartland", "type": "Film", "year": 2026, "genre": "Mystery thriller", "date": "2026-11-13", "about": "Jessica Chastain plays a fallen Nashville country star hunting for her missing niece." },
         { "title": "Love Is Blind, Habibi", "type": "Series", "year": 2026, "genre": "Reality dating", "date": "2026-11-12", "about": "Season 2 of the Arab dating experiment: new singles try to get engaged before ever seeing each other." },
         { "title": "The Devil's Plan", "type": "Series", "year": 2026, "genre": "Strategy competition", "date": "2026-11-10", "about": "Season 3 locks 16 sharp players in a battle of wits for serious cash." },
-        { "title": "Under Siege", "type": "Series", "year": 2026, "genre": "Historical drama", "date": "2026-11-06", "about": "Colombian drama reliving the 27 hour siege of Bogota's Palace of Justice in 1985." },
-        { "title": "Black Doves", "type": "Series", "year": 2026, "genre": "Spy thriller", "date": "2026-11-05", "about": "Keira Knightley and Ben Whishaw are back for a second season of London spy games." },
         { "title": "Obsess", "type": "Series", "year": 2026, "genre": "Psychological horror", "date": "2026-10-30", "about": "Netflix's Kuwaiti horror: a man home for his father's funeral keeps seeing the woman he once loved." }
       ]
     },
@@ -16,17 +16,18 @@
       "name": "Shahid",
       "match": ["shahid"],
       "items": [
+        { "title": "El Kalam Ala Eh?! Awel Leila", "titleAr": "الكلام على إيه؟! أول ليلة", "type": "Film", "year": 2026, "genre": "Comedy", "date": "2026-11-19", "about": "Four couples, one wedding night, endless chaos. Ahmed Hatem and Aya Samaha lead a stacked comic cast." },
+        { "title": "Fi El Zel 2", "titleAr": "في الظل 2", "type": "Series", "year": 2026, "genre": "Turkish crime drama", "date": "2026-11-15", "about": "Revenge put him in prison among gangsters. Now the woman he loves has married someone close to him." },
         { "title": "The Floor", "titleAr": "The Floor: الأرض لك اكسبها", "type": "Series", "year": 2026, "genre": "Game show", "date": "2026-11-10", "about": "Players battle for squares on a giant grid, each one a trivia category. Win a duel, grab more floor." },
         { "title": "Al Sitt Omour", "titleAr": "الست أومور", "type": "Series", "year": 2026, "genre": "Turkish drama", "date": "2026-11-01", "about": "Left by her husband, a mother of three fixes cars to keep her kids fed." },
-        { "title": "El Qessa El Kamla: Crime in Zamalek", "titleAr": "القصة الكاملة: جريمة في الزمالك", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-30", "about": "Saba Mubarak leads a three episode murder mystery where every clue points to a new suspect in Zamalek." },
-        { "title": "A Matter of Life or Death", "titleAr": "مسألة حياة أو موت", "type": "Film", "year": 2026, "genre": "Romantic dark comedy", "date": "2026-10-22", "about": "Saudi Oscar pick: a Jeddah woman sure a curse will kill her at 30 meets a very strange heart surgeon." },
-        { "title": "Tale' Nazel", "titleAr": "طالع نازل", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-10", "about": "Mona Zaki's betrayal drama wraps up: the final two episodes land November 7." }
+        { "title": "El Qessa El Kamla: Crime in Zamalek", "titleAr": "القصة الكاملة: جريمة في الزمالك", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-30", "about": "Saba Mubarak leads a three episode murder mystery where every clue points to a new suspect in Zamalek." }
       ]
     },
     {
       "name": "Yango Play",
       "match": ["yango"],
       "items": [
+        { "title": "El Gawahergy", "titleAr": "الجواهرجي", "type": "Film", "year": 2026, "genre": "Comedy", "date": "2026-11-19", "about": "Mohamed Henedy and Mona Zaki are a bickering couple seeing a marriage counsellor to dodge divorce number three." },
         { "title": "Khally Balak Men Nafsak", "titleAr": "خلي بالك من نفسك", "type": "Film", "year": 2026, "genre": "Comedy", "date": "2026-11-05", "about": "Ahmed El Sakka plays a commitment shy radio host who falls for Yasmine Abdel Aziz, an arms dealer." },
         { "title": "Khamseen Khamseen (50/50)", "titleAr": "خمسين خمسين", "type": "Series", "year": 2026, "genre": "Comedy crime", "date": "2026-10-29", "about": "Kinda Alloush leads a gang through one chaotic adventure after another, now streaming in full." }
       ]
@@ -35,6 +36,7 @@
       "name": "WATCH IT",
       "match": ["watch it", "watchit"],
       "items": [
+        { "title": "Sakret El Hob", "titleAr": "سكرة الحب", "type": "Series", "year": 2026, "genre": "Suspense drama", "date": null, "about": "A WATCH IT original from Lebanon: one strange event sparks a mystery. What happened to her? Coming soon." },
         { "title": "Dafneenah Sawa", "titleAr": "دافنينه سوا", "type": "Series", "year": 2026, "genre": "Comedy adventure", "date": "2026-10-28", "about": "Two ex thieves take security jobs at the compound built over the treasure they buried. Ten episodes." },
         { "title": "Walad El Lazina", "titleAr": "ولاد اللذينة", "type": "Series", "year": 2026, "genre": "Suspense drama", "date": null, "about": "A young man's life spirals after he falls for the wrong girl." },
         { "title": "Ward", "titleAr": "ورد", "type": "Series", "year": 2026, "genre": "Micro drama", "date": null, "about": "A pharmacist who drives for a ride app meets a new story with every passenger. Thirty short episodes." }
