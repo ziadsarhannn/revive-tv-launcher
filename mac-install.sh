@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Revive TV launcher: build on this Mac and install on the TV box over WiFi.
+# Sarhan TV launcher: build on this Mac and install on the TV box over WiFi.
 # Usage: bash mac-install.sh <box IP address>
 # Everything it downloads lives in ~/revive-tv-build. Delete that folder to remove it all.
 set -euo pipefail
@@ -90,5 +90,5 @@ step "Installing"
 step "Opening it"
 "$ADB" -s "$BOX_IP:5555" shell am start -n com.revivecreates.tvlauncher/.MainActivity >/dev/null
 echo
-echo "Done. Revive TV is open on your box."
-echo "Press the Home button on the remote. If the box asks which app to use, pick Revive TV and choose Always."
+echo "Done. Sarhan TV is open on your box."
+echo "Press the Home button on the remote. If the box asks which app to use, pick Sarhan TV and choose Always."

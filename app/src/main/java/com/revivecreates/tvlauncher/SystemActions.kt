@@ -4,6 +4,9 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.media.tv.TvContract
+import android.media.tv.TvInputInfo
+import android.media.tv.TvInputManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
@@ -77,13 +80,63 @@ object SystemActions {
     fun uninstall(context: Context, pkg: String): Boolean =
         start(context, Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg")))
 
+    /** One input the TV box can switch to: an HDMI port, AV or a tuner. */
+    data class Input(val id: String, val label: String, val connected: Boolean?)
+
+    private val liveTvApps = listOf("com.google.android.tv", "com.android.tv", "com.droidlogic.tvsource", "com.rockchip.tv")
+
+    /** HDMI ports first, then the rest, using the names set in the box's own settings. Empty when the box has none. */
+    fun inputs(context: Context): List<Input> {
+        val tim = runCatching { context.getSystemService(Context.TV_INPUT_SERVICE) as? TvInputManager }.getOrNull()
+            ?: return emptyList()
+        val list = runCatching { tim.tvInputList }.getOrNull().orEmpty()
+            .filter { runCatching { it.isPassthroughInput && !it.isHidden(context) }.getOrDefault(false) }
+            .sortedWith(compareBy<TvInputInfo>({ if (it.type == TvInputInfo.TYPE_HDMI) 0 else 1 }, { it.loadLabel(context).toString() }))
+        return list.map { info ->
+            val custom = runCatching { info.loadCustomLabel(context)?.toString() }.getOrNull()
+            val state = runCatching { tim.getInputState(info.id) }.getOrNull()
+            Input(
+                id = info.id,
+                label = custom?.takeIf { it.isNotBlank() } ?: info.loadLabel(context).toString(),
+                connected = when (state) {
+                    TvInputManager.INPUT_STATE_CONNECTED -> true
+                    TvInputManager.INPUT_STATE_DISCONNECTED -> false
+                    else -> null
+                },
+            )
+        }
+    }
+
+    /** Switches to an input through the box's Live TV app, the standard Android way. */
+    fun openInput(context: Context, id: String): Boolean {
+        val uri = TvContract.buildChannelUriForPassthroughInput(id)
+        val view = Intent(Intent.ACTION_VIEW).setDataAndType(uri, "vnd.android.cursor.item/channel")
+        for (pkg in liveTvApps) {
+            if (start(context, Intent(view).setPackage(pkg))) return true
+        }
+        return start(context, view)
+    }
+
+    /** The box's Live TV app, if it has one. */
+    fun liveTvApp(context: Context): String? = liveTvApps.firstOrNull {
+        context.packageManager.getLaunchIntentForPackage(it) != null ||
+            context.packageManager.getLeanbackLaunchIntentForPackage(it) != null
+    }
+
+    fun openLiveTv(context: Context): Boolean {
+        val pkg = liveTvApp(context) ?: return false
+        val pm = context.packageManager
+        val i = pm.getLeanbackLaunchIntentForPackage(pkg) ?: pm.getLaunchIntentForPackage(pkg) ?: return false
+        return start(context, i)
+    }
+
     fun networkLabel(context: Context): String {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
             ?: return "Unknown"
         val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return "Offline"
         return when {
             caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "Connected"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
             else -> "Online"
         }
     }

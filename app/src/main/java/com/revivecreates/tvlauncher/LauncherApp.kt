@@ -117,6 +117,8 @@ class Px(private val unit: Dp, private val density: Density) {
 
 private data class HeroText(val app: TvApp?, val item: WhatsNew.Item?, val index: Int, val count: Int)
 
+private class InputRow(val title: String, val sub: String, val run: (() -> Unit)?)
+
 private class CcItem(val name: String, val icon: ImageVector, val desc: String, val run: () -> Unit)
 
 private val menuOptions = listOf("Open", "Move left", "Move right", "Move to front", "App info", "Uninstall")
@@ -130,11 +132,15 @@ private fun Label(
     weight: FontWeight = FontWeight.Normal,
     align: TextAlign = TextAlign.Start,
     maxLines: Int = 1,
+    spacing: Float = 0f,
 ) {
     BasicText(
         text = text,
         modifier = modifier,
-        style = TextStyle(color = color, fontSize = size, fontWeight = weight, textAlign = align),
+        style = TextStyle(
+            color = color, fontSize = size, fontFamily = Outfit, fontWeight = weight,
+            textAlign = align, letterSpacing = spacing.em,
+        ),
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
     )
@@ -154,7 +160,10 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
     var row by remember { mutableIntStateOf(0) }
     var col by remember { mutableIntStateOf(0) }
     var heroKey by remember { mutableStateOf<String?>(null) }
-    var pillFocused by remember { mutableStateOf(false) }
+    var pillIndex by remember { mutableIntStateOf(-1) }
+    var inputsOpen by remember { mutableStateOf(false) }
+    var inputIndex by remember { mutableIntStateOf(0) }
+    var inputRows by remember { mutableStateOf<List<InputRow>>(emptyList()) }
     var ccOpen by remember { mutableStateOf(false) }
     var ccIndex by remember { mutableIntStateOf(0) }
     var menuApp by remember { mutableStateOf<TvApp?>(null) }
@@ -238,7 +247,8 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
     LaunchedEffect(homeSignal) {
         menuApp = null
         ccOpen = false
-        pillFocused = false
+        inputsOpen = false
+        pillIndex = -1
         row = 0
         runCatching { focus.requestFocus() }
     }
@@ -297,6 +307,25 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
         CcItem("Original Home", Icons.Home, "Open the box's own home screen") { SystemActions.originalHome(context) },
     )
 
+    fun openInputs() {
+        val found = SystemActions.inputs(context)
+        inputRows = if (found.isNotEmpty()) {
+            found.map { inp ->
+                InputRow(
+                    inp.label,
+                    when (inp.connected) { true -> "Connected"; false -> "Nothing connected"; null -> "" },
+                ) { SystemActions.openInput(context, inp.id) }
+            }
+        } else {
+            listOfNotNull(
+                InputRow("No inputs on this box", "This box has no HDMI in, AV or tuner", null),
+                SystemActions.liveTvApp(context)?.let { InputRow("Open Live TV", "The box's own TV app", { SystemActions.openLiveTv(context) }) },
+            )
+        }
+        inputIndex = inputRows.indexOfFirst { it.run != null }.coerceAtLeast(0)
+        inputsOpen = true
+    }
+
     fun openMenu(app: TvApp) {
         menuApp = app
         lastMenuApp = app
@@ -319,14 +348,25 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
 
     fun activate() {
         when {
+            inputsOpen -> {
+                val action = inputRows.getOrNull(inputIndex)?.run
+                if (action != null) {
+                    inputsOpen = false
+                    action()
+                }
+            }
             menuApp != null -> runMenu(menuIndex)
             ccOpen -> {
                 ccOpen = false
                 ccItems[ccIndex].run()
             }
-            pillFocused -> {
-                ccOpen = true
-                ccIndex = 0
+            pillIndex >= 0 -> {
+                when (pillIndex) {
+                    0 -> { ccOpen = true; ccIndex = 0 }
+                    1 -> SystemActions.settings(context, Settings.ACTION_WIFI_SETTINGS)
+                    2 -> openInputs()
+                    else -> SystemActions.settings(context, Settings.ACTION_SETTINGS)
+                }
             }
             else -> focusedApp?.let { launch(it) }
         }
@@ -334,6 +374,9 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
 
     fun move(dx: Int, dy: Int) {
         when {
+            inputsOpen -> {
+                if (dy != 0) inputIndex = (inputIndex + dy).coerceIn(0, max(0, inputRows.lastIndex))
+            }
             menuApp != null -> {
                 menuIndex = (menuIndex + dy).coerceIn(0, menuOptions.lastIndex)
             }
@@ -342,12 +385,18 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
                 val sameRow = dx == 0 || (next >= 0 && next / 4 == ccIndex / 4)
                 if (sameRow) ccIndex = next.coerceIn(0, ccItems.lastIndex)
             }
-            pillFocused -> {
-                if (dy > 0) pillFocused = false
+            pillIndex >= 0 -> {
+                if (dy > 0) pillIndex = -1
+                else if (dx != 0) pillIndex = (pillIndex + dx).coerceIn(0, 3)
             }
             rows.isEmpty() -> Unit
             dy < 0 && row == 0 -> {
-                pillFocused = true
+                pillIndex = when {
+                    col <= 1 -> 0
+                    col == 2 -> 1
+                    col == 3 -> 2
+                    else -> 3
+                }
             }
             dy != 0 -> {
                 val nr = (row + dy).coerceIn(0, rows.lastIndex)
@@ -366,9 +415,10 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
 
     BackHandler(enabled = true) {
         when {
+            inputsOpen -> inputsOpen = false
             menuApp != null -> menuApp = null
             ccOpen -> ccOpen = false
-            pillFocused -> pillFocused = false
+            pillIndex >= 0 -> pillIndex = -1
             row > 0 -> {
                 row = 0
                 col = col.coerceAtMost(rows.firstOrNull()?.lastIndex ?: 0)
@@ -407,7 +457,7 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
                     } else if (!longHandled && (native.isLongPress || native.repeatCount >= 6)) {
                         longHandled = true
                         pressed = false
-                        if (menuApp == null && !ccOpen && !pillFocused) focusedApp?.let { openMenu(it) }
+                        if (menuApp == null && !ccOpen && !inputsOpen && pillIndex < 0) focusedApp?.let { openMenu(it) }
                     }
                 } else if (up) {
                     pressed = false
@@ -419,9 +469,10 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
             Key.Menu -> {
                 if (up) {
                     when {
+                        inputsOpen -> inputsOpen = false
                         menuApp != null -> menuApp = null
                         ccOpen -> ccOpen = false
-                        pillFocused -> {
+                        pillIndex >= 0 -> {
                             ccOpen = true
                             ccIndex = 0
                         }
@@ -430,7 +481,13 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
                 }
                 true
             }
-            else -> false
+            else -> {
+                val code = ev.nativeKeyEvent.keyCode
+                if (code == android.view.KeyEvent.KEYCODE_TV_INPUT || code == android.view.KeyEvent.KEYCODE_TV) {
+                    if (up) { if (inputsOpen) inputsOpen = false else openInputs() }
+                    true
+                } else false
+            }
         }
     }
 
@@ -444,7 +501,10 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
     ) {
         val px = Px(maxWidth / 1920f, LocalDensity.current)
         val timeText = SimpleDateFormat("h:mm a", Locale.US).format(Date(now))
+        val clockHm = SimpleDateFormat("h:mm", Locale.US).format(Date(now))
+        val clockAp = SimpleDateFormat("a", Locale.US).format(Date(now)).uppercase(Locale.US)
         val dateText = SimpleDateFormat("EEEE d MMMM", Locale.getDefault()).format(Date(now))
+        val dateCaps = SimpleDateFormat("EEEE d MMMM", Locale.US).format(Date(now)).uppercase(Locale.US)
         val prayer = remember(now / 60_000L) { PrayerTimes.forToday(now) }
         val cairoHours = PrayerTimes.cairoHours(now)
         val nextIndex = prayer.times.indexOfFirst { it > cairoHours }
@@ -454,79 +514,193 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
         val untilText = (if (untilMinutes >= 60) "${untilMinutes / 60}h " else "") + "${untilMinutes % 60}m"
         val weatherIcon = if (weather?.let { Weather.isCloudy(it.code) } == true) Icons.Cloud else Icons.Sun
         val tempText = weather?.let { "${it.temp}°" } ?: "--°"
+        val hour = cairoHours.toInt()
+        val greeting = when {
+            hour < 5 -> "GOOD NIGHT"
+            hour < 12 -> "GOOD MORNING"
+            hour < 17 -> "GOOD AFTERNOON"
+            hour < 22 -> "GOOD EVENING"
+            else -> "GOOD NIGHT"
+        } + ", SARHAN"
 
-        // ---------- Top Shelf: editorial type ----------
-        val accent by animateColorAsState(heroApp?.accent ?: Color(0xFFB3262F), tween(600), label = "accent")
-        val heroDim by animateFloatAsState(if (gridMode) 0.35f else 0f, tween(700), label = "heroDim")
-        Box(Modifier.fillMaxSize().background(Color(0xFF0B0B0D)))
+        // ---------- Ambient glow in the focused app's color ----------
+        val glowApp = focusedApp ?: heroApp
+        val glow by animateColorAsState(glowApp?.accent ?: Color(0xFF3D6AA8), tween(800), label = "glow")
+        val accent by animateColorAsState(heroApp?.accent ?: Color(0xFF3D6AA8), tween(600), label = "accent")
+        val drift = rememberInfiniteTransition(label = "drift")
+        val d by drift.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(18_000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+            label = "d"
+        )
         Box(
             Modifier
-                .align(Alignment.TopStart)
-                .fillMaxWidth()
-                .height(px.d(8))
-                .background(accent)
-        )
-
-        val textAlpha by animateFloatAsState(if (!gridMode) 1f else 0f, tween(400), label = "textAlpha")
-        val textShift by animateDpAsState(if (gridMode) px.d(-40) else 0.dp, tween(600), label = "textShift")
-        val heroIndex = slide.coerceAtMost(max(0, slides.lastIndex))
-        val heroText = HeroText(heroApp, slides.getOrNull(heroIndex), heroIndex, slides.size)
-        AnimatedContent(
-            targetState = heroText,
-            modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer {
-                    alpha = textAlpha
-                    translationY = textShift.toPx()
-                },
-            transitionSpec = {
-                (fadeIn(tween(500, delayMillis = 120)) + slideInVertically(tween(650, easing = FastOutSlowInEasing)) { it / 14 }) togetherWith
-                    fadeOut(tween(260))
-            },
-            label = "heroText"
-        ) { ht ->
-            EditorialShelf(ht, accent, px, now, ht.app?.let { repo.lastOpened(it.packageName) } ?: 0L)
-        }
-        // The divider doubles as the slideshow timer, filling in the app's color.
-        if (heroApp != null) {
-            Box(
-                Modifier
-                    .offset(x = px.d(120), y = px.d(500) + textShift)
-                    .width(px.d(1100))
-                    .height(px.d(2))
-                    .graphicsLayer { alpha = textAlpha }
-                    .background(Color.White.copy(alpha = 0.16f))
-            ) {
-                if (slides.size > 1) {
-                    Box(
-                        Modifier
-                            .fillMaxHeight()
-                            .fillMaxWidth(slideProgress.value.coerceIn(0f, 1f))
-                            .background(accent)
+                .drawBehind {
+                    val c = Offset(px.f(490 + 80 * d), px.f(370 + 40 * d))
+                    drawRect(
+                        Brush.radialGradient(
+                            0f to glow.copy(alpha = 0.62f),
+                            0.45f to glow.copy(alpha = 0.22f),
+                            1f to Color.Transparent,
+                            center = c,
+                            radius = px.f(1150),
+                        )
+                    )
+                    drawRect(
+                        Brush.horizontalGradient(
+                            0.3f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.55f),
+                        )
                     )
                 }
+        )
+
+        // ---------- Header: greeting, clock, date, prayer times ----------
+        val headerAlpha by animateFloatAsState(if (row >= 2) 0f else 1f, tween(400), label = "headerAlpha")
+        Column(
+            Modifier
+                .offset(x = px.d(120), y = px.d(66))
+                .graphicsLayer { alpha = headerAlpha }
+        ) {
+            Label(greeting, px.s(24), color = Color.White.copy(alpha = 0.62f), weight = FontWeight.Medium, spacing = 0.22f)
+            Spacer(Modifier.height(px.d(6)))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Row {
+                    BasicText(
+                        clockHm,
+                        modifier = Modifier.alignByBaseline(),
+                        style = TextStyle(
+                            color = Color.White,
+                            fontSize = px.s(132),
+                            lineHeight = px.s(132),
+                            fontFamily = Outfit,
+                            fontWeight = FontWeight.ExtraLight,
+                            letterSpacing = (-0.03).em,
+                        ),
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.width(px.d(14)))
+                    Label(
+                        clockAp, px.s(32), modifier = Modifier.alignByBaseline(),
+                        color = Color.White.copy(alpha = 0.8f), weight = FontWeight.Medium, spacing = 0.08f
+                    )
+                }
+                Spacer(Modifier.width(px.d(28)))
+                Box(Modifier.width(px.d(2)).height(px.d(62)).background(Color.White.copy(alpha = 0.22f)))
+                Spacer(Modifier.width(px.d(28)))
+                Label(dateCaps, px.s(28), color = Color.White.copy(alpha = 0.72f), spacing = 0.16f)
+            }
+            Spacer(Modifier.height(px.d(12)))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(px.d(22))) {
+                PrayerTimes.names.forEachIndexed { i, name ->
+                    val on = i == shownNext
+                    val c = if (on) Color.White else Color.White.copy(alpha = 0.45f)
+                    val w = if (on) FontWeight.SemiBold else FontWeight.Normal
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(px.d(6)).clip(CircleShape).background(if (on) accent else Color.Transparent))
+                        Spacer(Modifier.width(px.d(8)))
+                        Label(name.uppercase(Locale.US), px.s(17), color = c, weight = w, spacing = 0.12f)
+                        Spacer(Modifier.width(px.d(8)))
+                        Label(PrayerTimes.format12(prayer.times[i]), px.s(17), color = c, weight = w, spacing = 0.04f)
+                    }
+                }
+                Label("in $untilText", px.s(17), color = Color.White.copy(alpha = 0.55f), spacing = 0.06f)
             }
         }
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = heroDim)))
 
-        // ---------- App grid ----------
-        val gridY by animateDpAsState(
-            if (!gridMode) px.d(806) else px.d(120) - px.d(280) * max(0, row - 2),
+        // ---------- Pills: weather (Control Center), Wi-Fi, Settings ----------
+        Row(
+            Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = px.d(52), end = px.d(120))
+                .graphicsLayer { alpha = headerAlpha },
+            horizontalArrangement = Arrangement.spacedBy(px.d(14))
+        ) {
+            Pill(weatherIcon, "$tempText Heliopolis", pillIndex == 0 && !ccOpen, px)
+            Pill(Icons.Wifi, network.ifBlank { "Network" }, pillIndex == 1 && !ccOpen, px)
+            Pill(Icons.Input, "Inputs", pillIndex == 2 && !ccOpen && !inputsOpen, px)
+            Pill(Icons.Settings, "Settings", pillIndex == 3 && !ccOpen, px)
+        }
+
+        // ---------- Top Shelf: newest title, centred between the prayers and the dock ----------
+        val shelfAlpha by animateFloatAsState(if (!gridMode) 1f else 0f, tween(400), label = "shelfAlpha")
+        val heroIndex = slide.coerceAtMost(max(0, slides.lastIndex))
+        val heroText = HeroText(heroApp, slides.getOrNull(heroIndex), heroIndex, slides.size)
+        Box(
+            Modifier
+                .offset(x = px.d(120), y = px.d(276))
+                .width(px.d(980))
+                .height(px.d(464))
+                .graphicsLayer { alpha = shelfAlpha },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            AnimatedContent(
+                targetState = heroText,
+                transitionSpec = {
+                    (fadeIn(tween(500, delayMillis = 100)) + slideInVertically(tween(650, easing = FastOutSlowInEasing)) { it / 12 }) togetherWith
+                        fadeOut(tween(240))
+                },
+                contentAlignment = Alignment.CenterStart,
+                label = "heroText"
+            ) { ht -> ShelfText(ht, accent, px, now, ht.app?.let { repo.lastOpened(it.packageName) } ?: 0L) }
+        }
+
+        // ---------- New on <app>: pinned 64 px above the dock ----------
+        if (slides.isNotEmpty()) {
+            NewList(
+                app = heroApp,
+                items = slides,
+                current = heroIndex,
+                progress = slideProgress.value,
+                accent = accent,
+                px = px,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = px.d(120), bottom = px.d(404))
+                    .graphicsLayer { alpha = shelfAlpha }
+            )
+        }
+
+        // ---------- Dock band and the app grid below it ----------
+        val dockTop by animateDpAsState(
+            when {
+                row == 0 -> px.d(740)
+                else -> px.d(380) - px.d(280) * (row - 1)
+            },
             tween(700, easing = FastOutSlowInEasing),
-            label = "gridY"
+            label = "dockTop"
         )
         Column(
             Modifier
                 .wrapContentSize(Alignment.TopStart, unbounded = true)
-                .offset(x = px.d(120), y = gridY),
-            verticalArrangement = Arrangement.spacedBy(px.d(102))
+                .offset(x = px.d(116), y = dockTop)
+        ) {
+            val band = RoundedCornerShape(px.d(52))
+            Box(
+                Modifier
+                    .width(px.d(1688))
+                    .height(px.d(238))
+                    .clip(band)
+                    .background(Color(0xDB161618))
+                    .border(px.d(1.5), Color.White.copy(alpha = 0.08f), band)
+            ) {}
+            Spacer(Modifier.height(px.d(56)))
+        }
+        Column(
+            Modifier
+                .wrapContentSize(Alignment.TopStart, unbounded = true)
+                .offset(x = px.d(146), y = dockTop + px.d(30))
         ) {
             rows.forEachIndexed { r, items ->
-                Row(horizontalArrangement = Arrangement.spacedBy(px.d(48))) {
+                if (r == 1) Spacer(Modifier.height(px.d(30 + 56)))
+                if (r > 1) Spacer(Modifier.height(px.d(102)))
+                Row(horizontalArrangement = Arrangement.spacedBy(px.d(36))) {
                     items.forEachIndexed { c, app ->
-                        val isFocused = !ccOpen && !pillFocused && r == row && c == col
+                        val isFocused = !ccOpen && !inputsOpen && pillIndex < 0 && r == row && c == col
                         key(app.packageName) {
-                            AppTile(app, isFocused, pressed && isFocused, tiltX, tiltY, px)
+                            AppTile(app, isFocused, pressed && isFocused, tiltX, tiltY, px, showLabel = r > 0)
                         }
                     }
                 }
@@ -542,57 +716,9 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
             )
         }
 
-        // ---------- Time, weather and next prayer. Press Up to focus it, OK for Control Center ----------
-        val infoAlpha by animateFloatAsState(if (!gridMode && !ccOpen) 1f else 0f, label = "infoAlpha")
-        val infoBg by animateColorAsState(if (pillFocused) Color.White.copy(alpha = 0.16f) else Color.Transparent, label = "infoBg")
-        val infoScale by animateFloatAsState(if (pillFocused) 1.06f else 1f, spring(0.6f, 400f), label = "infoScale")
-        Column(
-            Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = px.d(36), end = px.d(96))
-                .graphicsLayer {
-                    alpha = infoAlpha
-                    scaleX = infoScale
-                    scaleY = infoScale
-                }
-                .clip(RoundedCornerShape(px.d(28)))
-                .background(infoBg)
-                .padding(horizontal = px.d(24), vertical = px.d(12)),
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(px.d(10))
-        ) {
-            Label(timeText, px.s(44), weight = FontWeight.Bold)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    rememberVectorPainter(weatherIcon),
-                    contentDescription = null,
-                    modifier = Modifier.size(px.d(28)),
-                    colorFilter = ColorFilter.tint(Color.White.copy(alpha = 0.88f))
-                )
-                Spacer(Modifier.width(px.d(10)))
-                Label("$tempText Heliopolis", px.s(22), color = Color.White.copy(alpha = 0.88f), weight = FontWeight.Medium)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(Color.White.copy(alpha = 0.18f))
-                        .padding(horizontal = px.d(16), vertical = px.d(5))
-                ) {
-                    Label(
-                        "${PrayerTimes.names[shownNext]} ${PrayerTimes.format12(prayer.times[shownNext])}",
-                        px.s(22),
-                        weight = FontWeight.SemiBold
-                    )
-                }
-                Spacer(Modifier.width(px.d(12)))
-                Label("in $untilText", px.s(22), color = Color.White.copy(alpha = 0.75f))
-            }
-        }
-
         // ---------- Overlays ----------
         AnimatedVisibility(
-            visible = ccOpen || menuApp != null,
+            visible = ccOpen || menuApp != null || inputsOpen,
             enter = fadeIn(tween(300)),
             exit = fadeOut(tween(300))
         ) {
@@ -606,6 +732,15 @@ fun LauncherApp(repo: AppRepository, homeSignal: Int, resumeSignal: Int, reloadS
             exit = slideOutHorizontally(tween(420)) { it / 2 } + fadeOut(tween(300))
         ) {
             ControlCenterPanel(px, ccItems, ccIndex, timeText, dateText, deviceName, weather, weatherIcon, prayer, shownNext)
+        }
+
+        AnimatedVisibility(
+            visible = inputsOpen,
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = px.d(140), end = px.d(120)),
+            enter = scaleIn(initialScale = 0.94f) + fadeIn(),
+            exit = scaleOut(targetScale = 0.94f) + fadeOut()
+        ) {
+            InputsPanel(px, inputRows, inputIndex)
         }
 
         AnimatedVisibility(
@@ -625,183 +760,208 @@ private fun openedText(time: Long, now: Long): String = when {
     else -> "Last opened " + DateUtils.getRelativeTimeSpanString(time, now, DateUtils.MINUTE_IN_MILLIS)
 }
 
-/** Biggest title size that fits: one line if possible, otherwise two. */
-private fun titleSize(title: String): Float {
-    val n = title.length.coerceAtLeast(1)
-    for (size in listOf(220f, 180f, 150f)) if (n * 0.56f * size <= 1300f) return size
-    for (size in listOf(140f, 120f, 100f, 84f)) if (n * 0.56f * size <= 2500f) return size
-    return 72f
+/** Title size by length, as in the design: short titles big, long ones smaller. */
+private fun titleSize(title: String): Float = when {
+    title.length <= 14 -> 112f
+    title.length <= 22 -> 92f
+    title.length <= 30 -> 76f
+    else -> 64f
+}
+
+/** "THU" and "19 NOV" for a feed date, or "SOON" when it has none. */
+private fun dateLines(date: String?): Pair<String, String> {
+    val day = date?.let { runCatching { SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(it) }.getOrNull() }
+        ?: return "SOON" to ""
+    return SimpleDateFormat("EEE", Locale.US).format(day).uppercase(Locale.US) to
+        SimpleDateFormat("d MMM", Locale.US).format(day).uppercase(Locale.US)
 }
 
 @Composable
-private fun EditorialShelf(ht: HeroText, accent: Color, px: Px, now: Long, lastOpened: Long) {
+private fun ShelfText(ht: HeroText, accent: Color, px: Px, now: Long, lastOpened: Long) {
     val app = ht.app ?: return
     val item = ht.item
-    Box(Modifier.fillMaxSize()) {
-        Row(Modifier.offset(x = px.d(120), y = px.d(120)), verticalAlignment = Alignment.CenterVertically) {
-            if (item != null) {
+    Column(Modifier.width(px.d(980))) {
+        if (item != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier
-                        .clip(RoundedCornerShape(px.d(8)))
+                        .clip(RoundedCornerShape(px.d(10)))
                         .background(accent)
-                        .padding(horizontal = px.d(14), vertical = px.d(6))
+                        .padding(horizontal = px.d(16), vertical = px.d(7))
                 ) {
-                    Label(WhatsNew.badge(item, now).uppercase(), px.s(18), weight = FontWeight.Bold)
+                    Label(WhatsNew.badge(item, now).uppercase(Locale.US), px.s(20), weight = FontWeight.SemiBold, spacing = 0.08f)
                 }
                 Spacer(Modifier.width(px.d(16)))
-                Label("ON " + app.label.uppercase(), px.s(22), color = Color.White.copy(alpha = 0.7f), weight = FontWeight.SemiBold)
-            } else {
-                Label(app.label.uppercase(), px.s(22), color = Color.White.copy(alpha = 0.7f), weight = FontWeight.SemiBold)
+                Label("ON " + app.label.uppercase(Locale.US), px.s(22), color = Color.White.copy(alpha = 0.72f), weight = FontWeight.Medium, spacing = 0.18f)
             }
-        }
-
-        if (item != null && ht.count > 1) {
+            Spacer(Modifier.height(px.d(18)))
+            val size = titleSize(item.title)
             BasicText(
-                text = (ht.index + 1).toString().padStart(2, '0'),
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = px.d(230), end = px.d(120)),
+                item.title,
                 style = TextStyle(
-                    color = Color.White.copy(alpha = 0.22f),
-                    fontSize = px.s(300),
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-0.05).em,
-                    drawStyle = Stroke(width = px.f(2.5)),
+                    color = Color.White,
+                    fontSize = px.s(size),
+                    lineHeight = px.s(size * 1.02f),
+                    fontFamily = Outfit,
+                    fontWeight = FontWeight.Light,
+                    letterSpacing = (-0.02).em,
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            item.titleAr?.let {
+                Spacer(Modifier.height(px.d(8)))
+                Label(it, px.s(36), color = Color.White.copy(alpha = 0.82f))
+            }
+            Spacer(Modifier.height(px.d(14)))
+            Label(item.meta, px.s(26), color = Color.White.copy(alpha = 0.78f), weight = FontWeight.Medium, spacing = 0.04f)
+            item.about?.let {
+                Spacer(Modifier.height(px.d(8)))
+                Label(it, px.s(25), color = Color.White.copy(alpha = 0.7f), weight = FontWeight.Light, maxLines = 2)
+            }
+        } else {
+            BasicText(
+                app.label,
+                style = TextStyle(
+                    color = Color.White,
+                    fontSize = px.s(150),
+                    lineHeight = px.s(154),
+                    fontFamily = Outfit,
+                    fontWeight = FontWeight.Light,
+                    letterSpacing = (-0.02).em,
                 ),
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            Label(
-                "OF " + ht.count.toString().padStart(2, '0'),
-                px.s(26),
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = px.d(560), end = px.d(128)),
-                color = Color.White.copy(alpha = 0.5f),
-                weight = FontWeight.SemiBold,
-            )
+            Spacer(Modifier.height(px.d(14)))
+            Label(openedText(lastOpened, now), px.s(26), color = Color.White.copy(alpha = 0.72f))
         }
+    }
+}
 
-        val title = item?.title ?: app.label
-        val size = titleSize(title)
-        BasicText(
-            text = title,
-            modifier = Modifier.offset(x = px.d(112), y = px.d(210)).width(px.d(1300)),
-            style = TextStyle(
-                color = Color.White,
-                fontSize = px.s(size),
-                lineHeight = px.s(size * 0.94f),
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-0.05).em,
-            ),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+@Composable
+private fun NewList(
+    app: TvApp?,
+    items: List<WhatsNew.Item>,
+    current: Int,
+    progress: Float,
+    accent: Color,
+    px: Px,
+    modifier: Modifier,
+) {
+    val shape = RoundedCornerShape(px.d(38))
+    val n = items.size
+    val start = if (n > 5) (current - 2).coerceIn(0, n - 5) else 0
+    Column(
+        modifier
+            .width(px.d(570))
+            .clip(shape)
+            .background(Color(0x8C141416))
+            .border(px.d(1.5), Color.White.copy(alpha = 0.1f), shape)
+            .padding(px.d(20)),
+        verticalArrangement = Arrangement.spacedBy(px.d(6))
+    ) {
+        Label(
+            "NEW ON " + (app?.label ?: "").uppercase(Locale.US),
+            px.s(19),
+            modifier = Modifier.padding(start = px.d(14), top = px.d(4), bottom = px.d(4)),
+            color = Color.White.copy(alpha = 0.58f),
+            weight = FontWeight.Medium,
+            spacing = 0.18f,
         )
-
-        Row(
-            Modifier.offset(x = px.d(120), y = px.d(530)).width(px.d(1100)),
-            horizontalArrangement = Arrangement.spacedBy(px.d(60))
-        ) {
-            Column(Modifier.weight(1f)) {
-                Label("DETAILS", px.s(18), color = Color.White.copy(alpha = 0.5f), weight = FontWeight.SemiBold)
-                Spacer(Modifier.height(px.d(10)))
-                item?.titleAr?.let {
-                    Label(it, px.s(30), weight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(px.d(6)))
+        items.drop(start).take(5).forEachIndexed { j, item ->
+            val on = start + j == current
+            val bg by animateColorAsState(if (on) Color.White else Color.Transparent, tween(300), label = "rowBg")
+            val fg by animateColorAsState(if (on) Color(0xFF0B0B0D) else Color.White, tween(300), label = "rowFg")
+            val (d1, d2) = dateLines(item.date)
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(px.d(20)))
+                    .background(bg)
+            ) {
+                Row(
+                    Modifier.padding(start = px.d(12), end = px.d(16), top = px.d(10), bottom = px.d(10)),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.width(px.d(70)), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Label(d1, px.s(14), color = fg.copy(alpha = 0.75f), weight = FontWeight.SemiBold, spacing = 0.06f)
+                        if (d2.isNotEmpty()) Label(d2, px.s(14), color = fg.copy(alpha = 0.75f), weight = FontWeight.SemiBold, spacing = 0.06f)
+                    }
+                    Spacer(Modifier.width(px.d(18)))
+                    Column {
+                        Label(item.title, px.s(25), color = fg, weight = FontWeight.Medium)
+                        Spacer(Modifier.height(px.d(3)))
+                        Label(item.genre ?: item.type, px.s(17), color = fg.copy(alpha = 0.64f))
+                    }
                 }
-                Label(item?.meta ?: "App", px.s(28), weight = FontWeight.SemiBold, maxLines = 2)
-            }
-            Column(Modifier.weight(1f)) {
-                Label(if (item != null) "STORY" else "ACTIVITY", px.s(18), color = Color.White.copy(alpha = 0.5f), weight = FontWeight.SemiBold)
-                Spacer(Modifier.height(px.d(10)))
-                Label(
-                    item?.about ?: openedText(lastOpened, now),
-                    px.s(26),
-                    color = Color.White.copy(alpha = 0.82f),
-                    maxLines = 3,
-                )
+                if (on && n > 1) {
+                    Box(
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth(progress.coerceIn(0f, 1f))
+                            .height(px.d(5))
+                            .background(accent)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun HeroArt(app: TvApp, px: Px, slide: Int) {
-    // Each slide nudges the artwork to a new spot, so the slideshow feels alive.
-    val slideShift by animateFloatAsState(
-        listOf(0f, -90f, 70f, -40f)[slide % 4],
-        tween(1100, easing = FastOutSlowInEasing),
-        label = "slideShift"
-    )
-    val slideZoom by animateFloatAsState(
-        listOf(1f, 1.04f, 1.02f, 1.05f)[slide % 4],
-        tween(1400, easing = FastOutSlowInEasing),
-        label = "slideZoom"
-    )
-    val drift = rememberInfiniteTransition(label = "drift")
-    val t by drift.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(16000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "t"
-    )
-    Box(Modifier.fillMaxSize().background(app.heroColor)) {
-        val art = app.banner
-        if (art != null) {
-            if (Build.VERSION.SDK_INT >= 31) {
-                Image(
-                    art,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop, filterQuality = FilterQuality.High,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            alpha = 0.55f
-                            scaleX = 1.2f + t * 0.06f
-                            scaleY = 1.2f + t * 0.06f
-                            translationX = -t * px.f(60)
-                        }
-                        .blur(px.d(80))
-                )
-            }
-            Image(
-                art,
-                contentDescription = null,
-                contentScale = ContentScale.Crop, filterQuality = FilterQuality.High,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = px.d(150), end = px.d(120))
-                    .size(px.d(760), px.d(428))
-                    .graphicsLayer {
-                        translationX = -t * px.f(28) + px.f(slideShift)
-                        translationY = t * px.f(10)
-                        scaleX = (1f + t * 0.02f) * slideZoom
-                        scaleY = (1f + t * 0.02f) * slideZoom
-                        shadowElevation = px.f(40)
-                        shape = RoundedCornerShape(px.d(30))
-                        clip = true
-                    }
-            )
-        } else {
-            Box(
+private fun InputsPanel(px: Px, rows: List<InputRow>, index: Int) {
+    val shape = RoundedCornerShape(px.d(36))
+    Column(
+        Modifier
+            .width(px.d(520))
+            .clip(shape)
+            .background(Color(0xF02A2A2E))
+            .border(px.d(1.5), Color.White.copy(alpha = 0.14f), shape)
+            .padding(px.d(20)),
+        verticalArrangement = Arrangement.spacedBy(px.d(6))
+    ) {
+        Label("INPUTS", px.s(19), modifier = Modifier.padding(start = px.d(14), top = px.d(4), bottom = px.d(6)),
+            color = Color.White.copy(alpha = 0.58f), weight = FontWeight.Medium, spacing = 0.18f)
+        rows.forEachIndexed { i, r ->
+            val on = i == index && r.run != null
+            val fg = if (on) Color(0xFF0B0B0D) else Color.White.copy(alpha = if (r.run != null) 1f else 0.6f)
+            Column(
                 Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = px.d(90), end = px.d(120))
-                    .size(px.d(760))
-                    .graphicsLayer {
-                        translationX = -t * px.f(70)
-                        translationY = t * px.f(36)
-                    }
-                    .clip(CircleShape)
-                    .background(app.tint)
-            )
-            app.icon?.let {
-                Image(
-                    it,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = px.d(330), end = px.d(360))
-                        .size(px.d(280))
-                        .graphicsLayer { translationX = -t * px.f(50) }
-                )
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(px.d(20)))
+                    .background(if (on) Color.White else Color.Transparent)
+                    .padding(horizontal = px.d(20), vertical = px.d(14))
+            ) {
+                Label(r.title, px.s(26), color = fg, weight = FontWeight.Medium)
+                if (r.sub.isNotEmpty()) Label(r.sub, px.s(18), color = fg.copy(alpha = 0.64f))
             }
         }
+    }
+}
+
+@Composable
+private fun Pill(icon: ImageVector, text: String, focused: Boolean, px: Px) {
+    val bg by animateColorAsState(if (focused) Color.White else Color.White.copy(alpha = 0.08f), label = "pillBg")
+    val fg by animateColorAsState(if (focused) Color(0xFF0B0B0D) else Color.White, label = "pillFg")
+    val sc by animateFloatAsState(if (focused) 1.06f else 1f, spring(0.6f, 400f), label = "pillScale")
+    val shape = RoundedCornerShape(50)
+    Row(
+        Modifier
+            .graphicsLayer {
+                scaleX = sc
+                scaleY = sc
+            }
+            .height(px.d(66))
+            .clip(shape)
+            .background(bg)
+            .border(px.d(1.5), Color.White.copy(alpha = if (focused) 0f else 0.16f), shape)
+            .padding(horizontal = px.d(26)),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(rememberVectorPainter(icon), contentDescription = null, modifier = Modifier.size(px.d(26)), colorFilter = ColorFilter.tint(fg))
+        Spacer(Modifier.width(px.d(14)))
+        Label(text, px.s(24), color = fg, weight = FontWeight.Medium)
     }
 }
 
@@ -813,11 +973,12 @@ private fun AppTile(
     tiltX: Animatable<Float, AnimationVector1D>,
     tiltY: Animatable<Float, AnimationVector1D>,
     px: Px,
+    showLabel: Boolean = true,
 ) {
     val scale by animateFloatAsState(
         when {
-            focused && pressed -> 1.02f
-            focused -> 1.1f
+            focused && pressed -> 1.0f
+            focused -> 1.07f
             else -> 1f
         },
         spring(dampingRatio = 0.62f, stiffness = 380f),
@@ -839,10 +1000,11 @@ private fun AppTile(
                     }
                     cameraDistance = 14f * density
                     shadowElevation = px.f(6) + lift * px.f(30)
-                    shape = RoundedCornerShape(px.d(22))
+                    shape = RoundedCornerShape(px.d(26))
                     clip = true
                 }
                 .background(app.tint)
+                .border(px.d(4), Color.White.copy(alpha = 0.92f * lift), RoundedCornerShape(px.d(26)))
         ) {
             val banner = app.banner
             if (banner != null) {
@@ -891,7 +1053,7 @@ private fun AppTile(
                 .align(Alignment.TopCenter)
                 .offset(y = px.d(204))
                 .requiredWidth(px.d(380))
-                .graphicsLayer { alpha = lift },
+                .graphicsLayer { alpha = if (showLabel) lift else 0f },
             weight = FontWeight.SemiBold,
             align = TextAlign.Center
         )

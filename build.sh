@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the Revive TV launcher APK on a clean Linux machine.
+# Builds the Sarhan TV launcher APK on a clean Linux machine.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs the latest Revive TV build on the TV box over WiFi, from a Mac.
+# Installs the latest Sarhan TV build on the TV box over WiFi, from a Mac.
 # Usage:  curl -fsSL https://raw.githubusercontent.com/ziadsarhannn/revive-tv-launcher/main/install-from-mac.sh | bash -s <box IP>
 # The box IP can include a port (192.168.1.20:5555). Everything lives in ~/revive-tv-build.
 set -euo pipefail
@@ -24,14 +24,14 @@ if [ ! -x "$DIR/platform-tools/adb" ]; then
 fi
 ADB="$DIR/platform-tools/adb"
 
-step "Downloading the latest Revive TV"
+step "Downloading the latest Sarhan TV"
 if curl -fL --retry 3 --retry-delay 3 --progress-bar -o revive-tv.apk.new "https://github.com/ziadsarhannn/revive-tv-launcher/releases/download/latest/revive-tv.apk"; then
   mv revive-tv.apk.new revive-tv.apk
 elif [ -s revive-tv.apk ]; then
   rm -f revive-tv.apk.new
   echo "Download failed, so installing the copy saved last time."
 else
-  echo "Couldn't download Revive TV. Check the Mac's internet and run the same command again."
+  echo "Couldn't download Sarhan TV. Check the Mac's internet and run the same command again."
   exit 1
 fi
 
@@ -57,9 +57,9 @@ fi
 step "Installing"
 "$ADB" -s "$TARGET" install -r "$DIR/revive-tv.apk"
 
-step "Opening Revive TV"
+step "Opening Sarhan TV"
 "$ADB" -s "$TARGET" shell am start -n com.revivecreates.tvlauncher/.MainActivity >/dev/null 2>&1 || true
 
 echo
-echo "Done. Press Home on the remote. If the box asks which app to use, pick Revive TV and choose Always."
+echo "Done. Press Home on the remote. If the box asks which app to use, pick Sarhan TV and choose Always."
 echo "Next update: run the same command again."

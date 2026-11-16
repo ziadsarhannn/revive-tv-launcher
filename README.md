@@ -1,4 +1,4 @@
-# Revive TV
+# Sarhan TV
 
 An Apple TV style home screen for Android TV boxes, built for the H96 Max (Android TV 14).
 
@@ -22,7 +22,7 @@ https://github.com/<your username>/revive-tv-launcher/releases/download/latest/r
 1. On the box, install **Downloader** (by AFTVnews) from the Play Store.
 2. Open it, type the link above and press Go. It downloads and offers to install.
 3. Allow Downloader to install unknown apps when asked.
-4. Press Home on the remote. If the box asks which home app to use, pick **Revive TV** and choose **Always**.
+4. Press Home on the remote. If the box asks which home app to use, pick **Sarhan TV** and choose **Always**.
 
 Updates: open the same link again in Downloader. The new build installs over the old one and keeps your settings.
 
@@ -52,5 +52,5 @@ Any of these works. Nothing on the box is removed or replaced.
 
 * Control Center › **Original Home** opens it right away.
 * Settings › Apps › Default apps › Home app, then pick the original launcher.
-* Settings › Apps › Revive TV › **Uninstall**. The box falls back to its original home screen.
+* Settings › Apps › Sarhan TV › **Uninstall**. The box falls back to its original home screen.
 * If you used the adb command above, set the original back with the same command and its package name.
