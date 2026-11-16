@@ -3,6 +3,9 @@ package com.revivecreates.tvlauncher
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.res.Configuration
+import android.content.res.Resources
+import android.graphics.BitmapFactory
 import android.content.pm.PackageManager
 import android.util.DisplayMetrics
 import androidx.core.content.res.ResourcesCompat
@@ -70,13 +73,13 @@ class AppRepository(private val context: Context) {
         // Ask each app for its sharpest artwork (the highest density it ships), not the default size.
         val bannerRes = if (ai.banner != 0) ai.banner else ai.applicationInfo.banner
         val iconRes = if (ri.iconResource != 0) ri.iconResource else if (ai.icon != 0) ai.icon else ai.applicationInfo.icon
-        val bannerDrawable: Drawable? = sharpest(ai.applicationInfo, bannerRes)
-            ?: ai.loadBanner(pm) ?: ai.applicationInfo.loadBanner(pm)
-        val iconDrawable: Drawable? = sharpest(ai.applicationInfo, iconRes)
-            ?: runCatching { ri.loadIcon(pm) }.getOrNull()
-
-        val bannerBmp = bannerDrawable?.let { runCatching { it.toBitmap(960, 540, Bitmap.Config.ARGB_8888) }.getOrNull() }
-        val iconBmp = iconDrawable?.let { runCatching { it.toBitmap(288, 288, Bitmap.Config.ARGB_8888) }.getOrNull() }
+        // Artwork is kept at the pixel size the app ships, so it is resized only once, when drawn on the tile.
+        val bannerBmp = nativeBitmap(ai.applicationInfo, bannerRes)
+            ?: (sharpest(ai.applicationInfo, bannerRes) ?: ai.loadBanner(pm) ?: ai.applicationInfo.loadBanner(pm))
+                ?.let { render(it, 640, 360) }
+        val iconBmp = nativeBitmap(ai.applicationInfo, iconRes)
+            ?: (sharpest(ai.applicationInfo, iconRes) ?: runCatching { ri.loadIcon(pm) }.getOrNull())
+                ?.let { render(it, 288, 288) }
 
         val source = bannerBmp ?: iconBmp
         var dominant = 0xFF1C1C1F.toInt()
@@ -120,6 +123,38 @@ class AppRepository(private val context: Context) {
             else -> null
         }
     }
+
+    /**
+     * The image file itself, from the app's highest resolution folder, with no scaling on the way in.
+     * Null for vector or adaptive artwork, which is drawn fresh at full size instead.
+     */
+    private fun nativeBitmap(appInfo: ApplicationInfo, resId: Int): Bitmap? {
+        if (resId == 0) return null
+        return runCatching {
+            val base = pm.getResourcesForApplication(appInfo)
+            val dm = DisplayMetrics().apply {
+                setTo(base.displayMetrics)
+                densityDpi = DisplayMetrics.DENSITY_XXXHIGH
+                density = densityDpi / 160f
+            }
+            val conf = Configuration(base.configuration).apply { densityDpi = DisplayMetrics.DENSITY_XXXHIGH }
+            @Suppress("DEPRECATION")
+            val hi = Resources(base.assets, dm, conf)
+            val opts = BitmapFactory.Options().apply {
+                inScaled = false
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
+            BitmapFactory.decodeResource(hi, resId, opts)
+        }.getOrNull()
+    }
+
+    /** Draws vector or layered artwork at its real size, at least the given size, keeping its shape. */
+    private fun render(d: Drawable, minW: Int, minH: Int): Bitmap? = runCatching {
+        val iw = d.intrinsicWidth.takeIf { it > 0 } ?: minW
+        val ih = d.intrinsicHeight.takeIf { it > 0 } ?: minH
+        val k = maxOf(1f, minW.toFloat() / iw, minH.toFloat() / ih)
+        d.toBitmap((iw * k).toInt(), (ih * k).toInt(), Bitmap.Config.ARGB_8888)
+    }.getOrNull()
 
     private fun sharpest(appInfo: ApplicationInfo, resId: Int): Drawable? {
         if (resId == 0) return null
