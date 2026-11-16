@@ -76,6 +76,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.key.Key
@@ -789,7 +790,11 @@ private fun ShelfText(ht: HeroText, accent: Color, px: Px, now: Long, lastOpened
                         .background(accent)
                         .padding(horizontal = px.d(16), vertical = px.d(7))
                 ) {
-                    Label(WhatsNew.badge(item, now).uppercase(Locale.US), px.s(20), weight = FontWeight.SemiBold, spacing = 0.08f)
+                    Label(
+                        WhatsNew.badge(item, now).uppercase(Locale.US), px.s(20),
+                        color = if (accent.luminance() > 0.5f) Color(0xFF0B0B0D) else Color.White,
+                        weight = FontWeight.SemiBold, spacing = 0.08f
+                    )
                 }
                 Spacer(Modifier.width(px.d(16)))
                 Label("ON " + app.label.uppercase(Locale.US), px.s(22), color = Color.White.copy(alpha = 0.72f), weight = FontWeight.Medium, spacing = 0.18f)

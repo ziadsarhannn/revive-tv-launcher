@@ -93,6 +93,9 @@ class AppRepository(private val context: Context) {
             if (lum < 0.02) accent = 0xFF3D6AA8.toInt()
         }
 
+        // The main streaming apps get their own signature color for the glow, badge and timer.
+        brandColor(label, ai.packageName)?.let { accent = it }
+
         return TvApp(
             packageName = ai.packageName,
             className = ai.name,
@@ -103,6 +106,19 @@ class AppRepository(private val context: Context) {
             heroColor = Color(darken(dominant, 0.62f)),
             accent = Color(accent),
         )
+    }
+
+    private fun brandColor(label: String, pkg: String): Int? {
+        val l = label.lowercase()
+        val p = pkg.lowercase()
+        return when {
+            "netflix" in l || "netflix" in p -> 0xFFE50914.toInt()        // red
+            "shahid" in l || "shahid" in p -> 0xFF14B86A.toInt()          // green
+            "yango" in l || "yango" in p -> 0xFF7B3FE4.toInt()            // purple
+            "youtube" in l || "youtube" in p -> 0xFFE62117.toInt()        // red
+            "watch it" in l || "watchit" in l || "watchit" in p -> 0xFFF5C518.toInt() // yellow
+            else -> null
+        }
     }
 
     private fun sharpest(appInfo: ApplicationInfo, resId: Int): Drawable? {
