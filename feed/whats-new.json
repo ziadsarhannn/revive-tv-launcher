@@ -1,26 +1,26 @@
 {
-  "updated": "2026-11-12",
+  "updated": "2026-11-19",
   "apps": [
     {
       "name": "Netflix",
       "match": ["netflix"],
       "items": [
+        { "title": "The Mosquito Bowl", "type": "Film", "year": 2026, "genre": "War drama", "date": "2026-11-25", "about": "Four college football stars trade the field for the Marines after Pearl Harbor." },
+        { "title": "Steps", "type": "Film", "year": 2026, "genre": "Animated musical comedy", "date": "2026-11-20", "about": "Cinderella's stepsister Lilith swipes the Fairy Godmother's wand to chase her own happy ending." },
         { "title": "The Altruists", "type": "Series", "year": 2026, "genre": "Biographical drama", "date": "2026-11-19", "about": "Julia Garner and Anthony Boyle chart the dizzying rise and crash of crypto giant FTX." },
-        { "title": "Heartland", "type": "Film", "year": 2026, "genre": "Mystery thriller", "date": "2026-11-13", "about": "Jessica Chastain plays a fallen Nashville country star hunting for her missing niece." },
-        { "title": "Love Is Blind, Habibi", "type": "Series", "year": 2026, "genre": "Reality dating", "date": "2026-11-12", "about": "Season 2 of the Arab dating experiment: new singles try to get engaged before ever seeing each other." },
-        { "title": "The Devil's Plan", "type": "Series", "year": 2026, "genre": "Strategy competition", "date": "2026-11-10", "about": "Season 3 locks 16 sharp players in a battle of wits for serious cash." },
-        { "title": "Obsess", "type": "Series", "year": 2026, "genre": "Psychological horror", "date": "2026-10-30", "about": "Netflix's Kuwaiti horror: a man home for his father's funeral keeps seeing the woman he once loved." }
+        { "title": "Guarding Stars", "type": "Film", "year": 2026, "genre": "Romantic comedy", "date": "2026-11-18", "about": "A bodyguard poses as an action star's girlfriend on a Montana holiday trip. Leighton Meester and Jared Padalecki star." },
+        { "title": "Love Is Blind, Habibi", "type": "Series", "year": 2026, "genre": "Reality dating", "date": "2026-11-12", "about": "Season 2 of the Arab dating experiment: new singles try to get engaged before ever seeing each other." }
       ]
     },
     {
       "name": "Shahid",
       "match": ["shahid"],
       "items": [
+        { "title": "Anbar El Mot", "titleAr": "عنبر الموت", "type": "Series", "year": 2026, "genre": "Crime thriller", "date": "2026-11-26", "about": "Mona Shalaby plays a nurse accused of killing patients, inspired by a real Alexandria case from the late 1990s." },
         { "title": "El Kalam Ala Eh?! Awel Leila", "titleAr": "الكلام على إيه؟! أول ليلة", "type": "Film", "year": 2026, "genre": "Comedy", "date": "2026-11-19", "about": "Four couples, one wedding night, endless chaos. Ahmed Hatem and Aya Samaha lead a stacked comic cast." },
         { "title": "Fi El Zel 2", "titleAr": "في الظل 2", "type": "Series", "year": 2026, "genre": "Turkish crime drama", "date": "2026-11-15", "about": "Revenge put him in prison among gangsters. Now the woman he loves has married someone close to him." },
         { "title": "The Floor", "titleAr": "The Floor: الأرض لك اكسبها", "type": "Series", "year": 2026, "genre": "Game show", "date": "2026-11-10", "about": "Players battle for squares on a giant grid, each one a trivia category. Win a duel, grab more floor." },
-        { "title": "Al Sitt Omour", "titleAr": "الست أومور", "type": "Series", "year": 2026, "genre": "Turkish drama", "date": "2026-11-01", "about": "Left by her husband, a mother of three fixes cars to keep her kids fed." },
-        { "title": "El Qessa El Kamla: Crime in Zamalek", "titleAr": "القصة الكاملة: جريمة في الزمالك", "type": "Series", "year": 2026, "genre": "Drama", "date": "2026-10-30", "about": "Saba Mubarak leads a three episode murder mystery where every clue points to a new suspect in Zamalek." }
+        { "title": "Al Sitt Omour", "titleAr": "الست أومور", "type": "Series", "year": 2026, "genre": "Turkish drama", "date": "2026-11-01", "about": "Left by her husband, a mother of three fixes cars to keep her kids fed." }
       ]
     },
     {
