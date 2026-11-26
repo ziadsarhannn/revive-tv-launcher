@@ -1,14 +1,14 @@
 {
-  "updated": "2026-11-19",
+  "updated": "2026-11-26",
   "apps": [
     {
       "name": "Netflix",
       "match": ["netflix"],
       "items": [
-        { "title": "The Mosquito Bowl", "type": "Film", "year": 2026, "genre": "War drama", "date": "2026-11-25", "about": "Four college football stars trade the field for the Marines after Pearl Harbor." },
-        { "title": "Steps", "type": "Film", "year": 2026, "genre": "Animated musical comedy", "date": "2026-11-20", "about": "Cinderella's stepsister Lilith swipes the Fairy Godmother's wand to chase her own happy ending." },
-        { "title": "The Altruists", "type": "Series", "year": 2026, "genre": "Biographical drama", "date": "2026-11-19", "about": "Julia Garner and Anthony Boyle chart the dizzying rise and crash of crypto giant FTX." },
-        { "title": "Guarding Stars", "type": "Film", "year": 2026, "genre": "Romantic comedy", "date": "2026-11-18", "about": "A bodyguard poses as an action star's girlfriend on a Montana holiday trip. Leighton Meester and Jared Padalecki star." },
+        { "title": "Pride and Prejudice", "type": "Series", "year": 2026, "genre": "Period romance", "date": "2026-12-03", "about": "Emma Corrin and Jack Lowden spar as Elizabeth and Darcy, with Olivia Colman as Mrs. Bennet. Six episodes." },
+        { "title": "In a Holidaze", "type": "Film", "year": 2026, "genre": "Holiday rom com", "date": "2026-12-02", "about": "Maddie Ziegler gets stuck reliving the same family cabin Christmas, over and over. Rob Lowe costars." },
+        { "title": "Trinity", "type": "Series", "year": 2026, "genre": "Thriller", "date": "2026-12-01", "about": "Gugu Mbatha Raw's naval officer digs up secrets that may tie Richard Madden's defense chief to a global threat." },
+        { "title": "The Hunchback, Soul of Paris", "type": "Film", "year": 2026, "genre": "Period drama", "date": "2026-11-27", "about": "Vincent Cassel's Quasimodo is hunted for experiments in cholera stricken 1830s Paris. Victor Hugo, reimagined dark." },
         { "title": "Love Is Blind, Habibi", "type": "Series", "year": 2026, "genre": "Reality dating", "date": "2026-11-12", "about": "Season 2 of the Arab dating experiment: new singles try to get engaged before ever seeing each other." }
       ]
     },
@@ -16,30 +16,31 @@
       "name": "Shahid",
       "match": ["shahid"],
       "items": [
-        { "title": "Anbar El Mot", "titleAr": "عنبر الموت", "type": "Series", "year": 2026, "genre": "Crime thriller", "date": "2026-11-26", "about": "Mona Shalaby plays a nurse accused of killing patients, inspired by a real Alexandria case from the late 1990s." },
+        { "title": "Al Qaid", "titleAr": "القيد", "type": "Film", "year": 2025, "genre": "Desert revenge drama", "date": null, "about": "Saud crosses the 1920s Arabian desert hunting Rimah and his men. Saudi epic with Yaqoub Al Farhan, coming soon." },
+        { "title": "Anbar El Mot", "titleAr": "عنبر الموت", "type": "Series", "year": 2026, "genre": "Crime thriller", "date": "2026-11-26", "about": "Menna Shalaby plays a nurse on death row over patient deaths, inspired by a real 1990s Alexandria case." },
         { "title": "El Kalam Ala Eh?! Awel Leila", "titleAr": "الكلام على إيه؟! أول ليلة", "type": "Film", "year": 2026, "genre": "Comedy", "date": "2026-11-19", "about": "Four couples, one wedding night, endless chaos. Ahmed Hatem and Aya Samaha lead a stacked comic cast." },
         { "title": "Fi El Zel 2", "titleAr": "في الظل 2", "type": "Series", "year": 2026, "genre": "Turkish crime drama", "date": "2026-11-15", "about": "Revenge put him in prison among gangsters. Now the woman he loves has married someone close to him." },
-        { "title": "The Floor", "titleAr": "The Floor: الأرض لك اكسبها", "type": "Series", "year": 2026, "genre": "Game show", "date": "2026-11-10", "about": "Players battle for squares on a giant grid, each one a trivia category. Win a duel, grab more floor." },
-        { "title": "Al Sitt Omour", "titleAr": "الست أومور", "type": "Series", "year": 2026, "genre": "Turkish drama", "date": "2026-11-01", "about": "Left by her husband, a mother of three fixes cars to keep her kids fed." }
+        { "title": "Hob Masmoum", "titleAr": "حب مسموم", "type": "Series", "year": 2026, "genre": "Crime drama", "date": null, "about": "Nour El Nabawy and Fatin Saeed play lovers whose romance turns toxic, then deadly. Next story in El Qessa El Kamla." }
       ]
     },
     {
       "name": "Yango Play",
       "match": ["yango"],
       "items": [
-        { "title": "El Gawahergy", "titleAr": "الجواهرجي", "type": "Film", "year": 2026, "genre": "Comedy", "date": "2026-11-19", "about": "Mohamed Henedy and Mona Zaki are a bickering couple seeing a marriage counsellor to dodge divorce number three." },
+        { "title": "Alam Eftradi", "titleAr": "عالم افتراضي", "type": "Series", "year": 2026, "genre": "Social suspense", "date": null, "about": "Parents versus Gen Z: how online life rewires young love and choices. Fathy Abdel Wahab and Jamika star. Coming soon." },
+        { "title": "El Gawahergy", "titleAr": "الجواهرجي", "type": "Film", "year": 2026, "genre": "Comedy", "date": "2026-11-19", "about": "Mohamed Henedy and Mona Zaki are a bickering couple whose marriage counselling only makes things worse." },
         { "title": "Khally Balak Men Nafsak", "titleAr": "خلي بالك من نفسك", "type": "Film", "year": 2026, "genre": "Comedy", "date": "2026-11-05", "about": "Ahmed El Sakka plays a commitment shy radio host who falls for Yasmine Abdel Aziz, an arms dealer." },
-        { "title": "Khamseen Khamseen (50/50)", "titleAr": "خمسين خمسين", "type": "Series", "year": 2026, "genre": "Comedy crime", "date": "2026-10-29", "about": "Kinda Alloush leads a gang through one chaotic adventure after another, now streaming in full." }
+        { "title": "Khamseen Khamseen (50/50)", "titleAr": "خمسين خمسين", "type": "Series", "year": 2026, "genre": "Comedy crime", "date": null, "about": "Kinda Alloush leads a gang through one chaotic adventure after another, now streaming in full." }
       ]
     },
     {
       "name": "WATCH IT",
       "match": ["watch it", "watchit"],
       "items": [
-        { "title": "Sakret El Hob", "titleAr": "سكرة الحب", "type": "Series", "year": 2026, "genre": "Suspense drama", "date": null, "about": "A WATCH IT original from Lebanon: one strange event sparks a mystery. What happened to her? Coming soon." },
+        { "title": "Sakret El Hob", "titleAr": "سكرة الحب", "type": "Series", "year": 2026, "genre": "Romantic drama", "date": "2026-12-06", "about": "War scarred lives in Syria and Lebanon collide in love. New episodes Sunday to Wednesday." },
+        { "title": "Dawlet El Telawa (Season 2)", "titleAr": "دولة التلاوة", "type": "Special", "year": 2026, "genre": "Quran recitation contest", "date": "2026-11-13", "about": "32 reciters from across Egypt compete. New episodes every Friday and Saturday night until Ramadan." },
         { "title": "Dafneenah Sawa", "titleAr": "دافنينه سوا", "type": "Series", "year": 2026, "genre": "Comedy adventure", "date": "2026-10-28", "about": "Two ex thieves take security jobs at the compound built over the treasure they buried. Ten episodes." },
-        { "title": "Walad El Lazina", "titleAr": "ولاد اللذينة", "type": "Series", "year": 2026, "genre": "Suspense drama", "date": null, "about": "A young man's life spirals after he falls for the wrong girl." },
-        { "title": "Ward", "titleAr": "ورد", "type": "Series", "year": 2026, "genre": "Micro drama", "date": null, "about": "A pharmacist who drives for a ride app meets a new story with every passenger. Thirty short episodes." }
+        { "title": "Walad El Lazina", "titleAr": "ولاد اللذينة", "type": "Series", "year": 2026, "genre": "Suspense drama", "date": null, "about": "A young man's life spirals after he falls for the wrong girl." }
       ]
     }
   ]
